@@ -10,13 +10,9 @@ logger:
   baud_rate: 0 #Important. You can't use serial port
   
 wifi:
-  ssid: "XXX"
-  password: "XXX"
-  #important, otherwise the IP could change and then the entity is unavailable from home assistant.
-  manual_ip:
-    static_ip: 192.168.1.32
-    gateway: 192.168.1.1
-    subnet: 255.255.255.0
+  ssid: !secret wifi-ssid
+  password: !secret wifi-password
+
 # Enable Home Assistant API
 api:
 

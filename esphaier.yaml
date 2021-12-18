@@ -7,8 +7,10 @@ esphome:
 
 logger:
   level: DEBUG
-  baud_rate: 0 #Important. You can't use serial port
-  
+  # It is better to set baud_rate to 0, otherwise
+  # ESP will perform painfully slow
+  baud_rate: 0
+
 wifi:
   ssid: !secret wifi-ssid
   password: !secret wifi-password

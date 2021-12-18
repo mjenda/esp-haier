@@ -97,6 +97,100 @@ using namespace esphome::climate;
 #define MIN_VALID_INTERNAL_TEMP 10
 #define MAX_VALID_INTERNAL_TEMP 50
 
+class ControlCommand {
+public:
+  void SetHvacModeControl(byte mode) {
+    control_command_[MODE_OFFSET] &= ~MODE_MSK;
+    control_command_[MODE_OFFSET] |= mode;
+  }
+
+  void SetTemperatureSetpointControl(byte temp) {
+    control_command_[SET_POINT_OFFSET] = temp;
+  }
+
+  void SetFanSpeedControl(byte fan_mode) {
+    control_command_[MODE_OFFSET] &= ~FAN_MSK;
+    control_command_[MODE_OFFSET] |= fan_mode;
+  }
+
+  void SetHorizontalSwingControl(byte swing_mode) {
+    control_command_[HORIZONTAL_SWING_OFFSET] = swing_mode;
+  }
+
+  void SetVerticalSwingControl(byte swing_mode) {
+    control_command_[VERTICAL_SWING_OFFSET] = swing_mode;
+  }
+
+  void SetQuietModeControl(bool quiet_mode) {
+    byte tmp;
+    byte msk;
+
+    msk = (0x01 << QUIET_BIT);
+
+    if (quiet_mode == true) {
+      control_command_[STATUS_DATA_OFFSET] |= msk;
+    } else {
+      msk = ~msk;
+      control_command_[STATUS_DATA_OFFSET] &= msk;
+    }
+  }
+
+  void SetPurifyControl(bool purify_mode) {
+    byte tmp;
+    byte msk;
+
+    msk = (0x01 << PURIFY_BIT);
+
+    if (purify_mode == true) {
+      control_command_[STATUS_DATA_OFFSET] |= msk;
+    } else {
+      msk = ~msk;
+      control_command_[STATUS_DATA_OFFSET] &= msk;
+    }
+  }
+
+  void SetPowerControl(bool power_mode) {
+    byte tmp;
+    byte msk;
+
+    msk = (0x01 << POWER_BIT);
+
+    if (power_mode == true) {
+      control_command_[STATUS_DATA_OFFSET] |= msk;
+    } else {
+      msk = ~msk;
+      control_command_[STATUS_DATA_OFFSET] &= msk;
+    }
+  }
+
+  void SetFastModeControl(bool fast_mode) {
+    byte tmp;
+    byte msk;
+
+    msk = (0x01 << AUTO_FAN_MAX_BIT);
+
+    if (fast_mode == true) {
+      control_command_[STATUS_DATA_OFFSET] |= msk;
+    } else {
+      msk = ~msk;
+      control_command_[STATUS_DATA_OFFSET] &= msk;
+    }
+  }
+
+  void SetPointOffset(float temp) {
+    control_command_[SET_POINT_OFFSET] = (uint16)temp - 16;
+  }
+
+  byte* Data() { return control_command_.data(); }
+  std::size_t Size() { return control_command_.size(); }
+
+private:
+  std::array<byte, 25> control_command_{
+      {0xFF, 0xFF, 0x14, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00,
+       0x01, 0x60, 0x01, 0x09, 0x08, 0x25, 0x00, 0x02, 0x00,
+       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+};
+
 class Haier : public Climate, public PollingComponent {
 
 private:
@@ -112,10 +206,7 @@ private:
   byte power_command[17] = {0xFF, 0xFF, 0x0C, 0x40, 0x00, 0x00,
                             0x00, 0x00, 0x00, 0x01, 0x5D, 0x01,
                             0x00, 0x01, 0xAC, 0xBD, 0xFB};
-  byte control_command[25] = {0xFF, 0xFF, 0x14, 0x40, 0x00, 0x00, 0x00,
-                              0x00, 0x00, 0x01, 0x60, 0x01, 0x09, 0x08,
-                              0x25, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00,
-                              0x00, 0x00, 0x00, 0x00};
+  ControlCommand control_command_;
 
   byte climate_mode_fan_speed = FAN_AUTO;
   byte climate_mode_setpoint = 0x0A;
@@ -130,52 +221,14 @@ private:
   bool previous_status_init = false;
 
   // Functions
-
-  void SetHvacModeControl(byte mode) {
-    control_command[MODE_OFFSET] &= ~MODE_MSK;
-    control_command[MODE_OFFSET] |= mode;
-  }
-
   byte GetHvacModeStatus() { return status[MODE_OFFSET] & MODE_MSK; }
-
-  void SetTemperatureSetpointControl(byte temp) {
-    control_command[SET_POINT_OFFSET] = temp;
-  }
-
   byte GetTemperatureSetpointStatus() { return status[SET_POINT_OFFSET]; }
-
-  void SetFanSpeedControl(byte fan_mode) {
-    control_command[MODE_OFFSET] &= ~FAN_MSK;
-    control_command[MODE_OFFSET] |= fan_mode;
-  }
 
   byte GetFanSpeedStatus() { return status[MODE_OFFSET] & FAN_MSK; }
 
-  void SetHorizontalSwingControl(byte swing_mode) {
-    control_command[HORIZONTAL_SWING_OFFSET] = swing_mode;
-  }
-
   byte GetHorizontalSwingStatus() { return status[HORIZONTAL_SWING_OFFSET]; }
 
-  void SetVerticalSwingControl(byte swing_mode) {
-    control_command[VERTICAL_SWING_OFFSET] = swing_mode;
-  }
-
   byte GetVerticalSwingStatus() { return status[VERTICAL_SWING_OFFSET]; }
-
-  void SetQuietModeControl(bool quiet_mode) {
-    byte tmp;
-    byte msk;
-
-    msk = (0x01 << QUIET_BIT);
-
-    if (quiet_mode == true) {
-      control_command[STATUS_DATA_OFFSET] |= msk;
-    } else {
-      msk = ~msk;
-      control_command[STATUS_DATA_OFFSET] &= msk;
-    }
-  }
 
   bool GetQuietModeStatus(void) {
     bool ret = false;
@@ -191,20 +244,6 @@ private:
     return ret;
   }
 
-  void SetPurifyControl(bool purify_mode) {
-    byte tmp;
-    byte msk;
-
-    msk = (0x01 << PURIFY_BIT);
-
-    if (purify_mode == true) {
-      control_command[STATUS_DATA_OFFSET] |= msk;
-    } else {
-      msk = ~msk;
-      control_command[STATUS_DATA_OFFSET] &= msk;
-    }
-  }
-
   bool GetPurifyStatus(void) {
     bool ret = false;
     byte tmp;
@@ -217,20 +256,6 @@ private:
       ret = true;
 
     return ret;
-  }
-
-  void SetPowerControl(bool power_mode) {
-    byte tmp;
-    byte msk;
-
-    msk = (0x01 << POWER_BIT);
-
-    if (power_mode == true) {
-      control_command[STATUS_DATA_OFFSET] |= msk;
-    } else {
-      msk = ~msk;
-      control_command[STATUS_DATA_OFFSET] &= msk;
-    }
   }
 
   bool GetPowerStatus(void) {
@@ -259,20 +284,6 @@ private:
       ret = true;
 
     return ret;
-  }
-
-  void SetFastModeControl(bool fast_mode) {
-    byte tmp;
-    byte msk;
-
-    msk = (0x01 << AUTO_FAN_MAX_BIT);
-
-    if (fast_mode == true) {
-      control_command[STATUS_DATA_OFFSET] |= msk;
-    } else {
-      msk = ~msk;
-      control_command[STATUS_DATA_OFFSET] &= msk;
-    }
   }
 
   void CompareStatusByte() {
@@ -394,15 +405,15 @@ public:
     // Read all the info from the status message and update values in control
     // message so the next message is updated This is usefull if there are
     // manual changes with the remote control
-    SetPowerControl(GetPowerStatus());
-    SetHvacModeControl(GetHvacModeStatus());
-    SetPurifyControl(GetPurifyStatus());
-    SetQuietModeControl(GetQuietModeStatus());
-    SetFastModeControl(GetFastModeStatus());
-    SetFanSpeedControl(GetFanSpeedStatus());
-    SetHorizontalSwingControl(GetHorizontalSwingStatus());
-    SetVerticalSwingControl(GetVerticalSwingStatus());
-    SetTemperatureSetpointControl(GetTemperatureSetpointStatus());
+    control_command_.SetPowerControl(GetPowerStatus());
+    control_command_.SetHvacModeControl(GetHvacModeStatus());
+    control_command_.SetPurifyControl(GetPurifyStatus());
+    control_command_.SetQuietModeControl(GetQuietModeStatus());
+    control_command_.SetFastModeControl(GetFastModeStatus());
+    control_command_.SetFanSpeedControl(GetFanSpeedStatus());
+    control_command_.SetHorizontalSwingControl(GetHorizontalSwingStatus());
+    control_command_.SetVerticalSwingControl(GetVerticalSwingStatus());
+    control_command_.SetTemperatureSetpointControl(GetTemperatureSetpointStatus());
 
     if (GetHvacModeStatus() == MODE_FAN) {
       fan_mode_fan_speed = GetFanSpeedStatus();
@@ -519,67 +530,67 @@ public:
 
       switch (new_mode) {
       case CLIMATE_MODE_OFF:
-        SetPowerControl(!GetPowerStatus());
-        sendData(control_command, sizeof(control_command));
+        control_command_.SetPowerControl(!GetPowerStatus());
+        sendData(control_command_.Data(), control_command_.Size());
         break;
 
       case CLIMATE_MODE_HEAT_COOL:
-        SetPowerControl(true);
-        SetHvacModeControl(MODE_AUTO);
+        control_command_.SetPowerControl(true);
+        control_command_.SetHvacModeControl(MODE_AUTO);
 
         // Recover fan_speed and setpoint (when switching to fan_only they are
         // "lost")
-        SetFanSpeedControl(climate_mode_fan_speed);
-        SetTemperatureSetpointControl(climate_mode_setpoint);
+        control_command_.SetFanSpeedControl(climate_mode_fan_speed);
+        control_command_.SetTemperatureSetpointControl(climate_mode_setpoint);
 
-        sendData(control_command, sizeof(control_command));
+        sendData(control_command_.Data(), control_command_.Size());
         break;
 
       case CLIMATE_MODE_HEAT:
-        SetPowerControl(true);
-        SetHvacModeControl(MODE_HEAT);
+        control_command_.SetPowerControl(true);
+        control_command_.SetHvacModeControl(MODE_HEAT);
 
         // Recover fan_speed and setpoint (when switching to fan_only they are
         // "lost")
-        SetFanSpeedControl(climate_mode_fan_speed);
-        SetTemperatureSetpointControl(climate_mode_setpoint);
+        control_command_.SetFanSpeedControl(climate_mode_fan_speed);
+        control_command_.SetTemperatureSetpointControl(climate_mode_setpoint);
 
-        sendData(control_command, sizeof(control_command));
+        sendData(control_command_.Data(), control_command_.Size());
         break;
 
       case CLIMATE_MODE_DRY:
-        SetPowerControl(true);
-        SetHvacModeControl(MODE_DRY);
+        control_command_.SetPowerControl(true);
+        control_command_.SetHvacModeControl(MODE_DRY);
 
         // Recover fan_speed and setpoint (when switching to fan_only they are
         // "lost")
-        SetFanSpeedControl(climate_mode_fan_speed);
-        SetTemperatureSetpointControl(climate_mode_setpoint);
+        control_command_.SetFanSpeedControl(climate_mode_fan_speed);
+        control_command_.SetTemperatureSetpointControl(climate_mode_setpoint);
 
-        sendData(control_command, sizeof(control_command));
+        sendData(control_command_.Data(), control_command_.Size());
         break;
 
       case CLIMATE_MODE_FAN_ONLY:
-        SetPowerControl(true);
-        SetHvacModeControl(MODE_FAN);
+        control_command_.SetPowerControl(true);
+        control_command_.SetHvacModeControl(MODE_FAN);
 
         // Recover fan_speed and setpoint (fan_only values are "special")
-        SetFanSpeedControl(fan_mode_fan_speed);
-        SetTemperatureSetpointControl(fan_mode_setpoint);
+        control_command_.SetFanSpeedControl(fan_mode_fan_speed);
+        control_command_.SetTemperatureSetpointControl(fan_mode_setpoint);
 
-        sendData(control_command, sizeof(control_command));
+        sendData(control_command_.Data(), control_command_.Size());
         break;
 
       case CLIMATE_MODE_COOL:
-        SetPowerControl(true);
-        SetHvacModeControl(MODE_COOL);
+        control_command_.SetPowerControl(true);
+        control_command_.SetHvacModeControl(MODE_COOL);
 
         // Recover fan_speed and setpoint (when switching to fan_only they are
         // "lost")
-        SetFanSpeedControl(climate_mode_fan_speed);
-        SetTemperatureSetpointControl(climate_mode_setpoint);
+        control_command_.SetFanSpeedControl(climate_mode_fan_speed);
+        control_command_.SetTemperatureSetpointControl(climate_mode_setpoint);
 
-        sendData(control_command, sizeof(control_command));
+        sendData(control_command_.Data(), control_command_.Size());
         break;
 
       case CLIMATE_MODE_AUTO:
@@ -596,19 +607,19 @@ public:
     if (call.get_fan_mode().has_value()) {
       switch (call.get_fan_mode().value()) {
       case CLIMATE_FAN_LOW:
-        SetFanSpeedControl(FAN_LOW);
+        control_command_.SetFanSpeedControl(FAN_LOW);
         break;
       case CLIMATE_FAN_MIDDLE:
-        SetFanSpeedControl(FAN_MID);
+        control_command_.SetFanSpeedControl(FAN_MID);
         break;
       case CLIMATE_FAN_MEDIUM:
-        SetFanSpeedControl(FAN_MID);
+        control_command_.SetFanSpeedControl(FAN_MID);
         break;
       case CLIMATE_FAN_HIGH:
-        SetFanSpeedControl(FAN_HIGH);
+        control_command_.SetFanSpeedControl(FAN_HIGH);
         break;
       case CLIMATE_FAN_AUTO:
-        SetFanSpeedControl(FAN_AUTO);
+        control_command_.SetFanSpeedControl(FAN_AUTO);
         break;
       case CLIMATE_FAN_ON:
       case CLIMATE_FAN_OFF:
@@ -617,7 +628,7 @@ public:
       default:
         break;
       }
-      sendData(control_command, sizeof(control_command));
+      sendData(control_command_.Data(), control_command_.Size());
     }
 
     // Set swing mode
@@ -625,33 +636,33 @@ public:
       switch (call.get_swing_mode().value()) {
       case CLIMATE_SWING_OFF:
         // When not auto we decide to set it to the center
-        SetHorizontalSwingControl(HORIZONTAL_SWING_CENTER);
+        control_command_.SetHorizontalSwingControl(HORIZONTAL_SWING_CENTER);
         // When not auto we decide to set it to the center
-        SetVerticalSwingControl(VERTICAL_SWING_CENTER);
+        control_command_.SetVerticalSwingControl(VERTICAL_SWING_CENTER);
         break;
       case CLIMATE_SWING_VERTICAL:
         // When not auto we decide to set it to the center
-        SetHorizontalSwingControl(HORIZONTAL_SWING_CENTER);
-        SetVerticalSwingControl(VERTICAL_SWING_AUTO);
+        control_command_.SetHorizontalSwingControl(HORIZONTAL_SWING_CENTER);
+        control_command_.SetVerticalSwingControl(VERTICAL_SWING_AUTO);
         break;
       case CLIMATE_SWING_HORIZONTAL:
-        SetHorizontalSwingControl(HORIZONTAL_SWING_AUTO);
+        control_command_.SetHorizontalSwingControl(HORIZONTAL_SWING_AUTO);
         // When not auto we decide to set it to the center
-        SetVerticalSwingControl(VERTICAL_SWING_CENTER);
+        control_command_.SetVerticalSwingControl(VERTICAL_SWING_CENTER);
         break;
       case CLIMATE_SWING_BOTH:
-        SetHorizontalSwingControl(HORIZONTAL_SWING_AUTO);
-        SetVerticalSwingControl(VERTICAL_SWING_AUTO);
+        control_command_.SetHorizontalSwingControl(HORIZONTAL_SWING_AUTO);
+        control_command_.SetVerticalSwingControl(VERTICAL_SWING_AUTO);
         break;
       }
-      sendData(control_command, sizeof(control_command));
+      sendData(control_command_.Data(), control_command_.Size());
     }
 
     if (call.get_target_temperature().has_value()) {
       float temp = *call.get_target_temperature();
       ESP_LOGD("Control", "*call.get_target_temperature() = %f", temp);
-      control_command[SET_POINT_OFFSET] = (uint16)temp - 16;
-      sendData(control_command, sizeof(control_command));
+      control_command_.SetPointOffset(temp);
+      sendData(control_command_.Data(), control_command_.Size());
       target_temperature = temp;
       this->publish_state();
     }
@@ -673,7 +684,6 @@ public:
     ESP_LOGD("Haier", "Message sent: %s  - CRC: %X - CRC16: %X", raw.c_str(),
              crc, crc_16);
   }
-
   String getHex(byte *message, byte size) {
 
     String raw;

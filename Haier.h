@@ -13,6 +13,7 @@
 
 #include "constants.h"
 #include "utility.h"
+#include "initialization.h"
 #include "control_command.h"
 #include "status.h"
 
@@ -22,10 +23,6 @@ using namespace esphome::climate;
 class Haier : public Climate, public PollingComponent {
 
 private:
-  byte initialization_1[13] = {0xFF, 0xFF, 0x0A, 0x0,  0x0,  0x0, 0x0,
-                               0x0,  0x00, 0x61, 0x00, 0x07, 0x72};
-  byte initialization_2[13] = {0xFF, 0xFF, 0x08, 0x40, 0x0,  0x0, 0x0,
-                               0x0,  0x0,  0x70, 0xB8, 0x86, 0x41};
   byte poll[15] = {0xFF, 0xFF, 0x0A, 0x40, 0x00, 0x00, 0x00, 0x00,
                    0x00, 0x01, 0x4D, 0x01, 0x99, 0xB3, 0xB4};
   byte power_command[17] = {0xFF, 0xFF, 0x0C, 0x40, 0x00, 0x00,
@@ -43,19 +40,11 @@ private:
   bool first_status_received = false;
 
 public:
-  Haier() : PollingComponent(5 * 1000) {}
+  Haier() : PollingComponent(5000 /*5 sec*/) {}
 
   void setup() override {
-
     Serial.begin(9600);
-    delay(1000);
-    Serial.write(initialization_1, sizeof(initialization_1));
-    auto raw = getHex(initialization_1, sizeof(initialization_1));
-    ESP_LOGD("Haier", "initialization_1: %s ", raw.c_str());
-    delay(1000);
-    Serial.write(initialization_2, sizeof(initialization_2));
-    raw = getHex(initialization_2, sizeof(initialization_2));
-    ESP_LOGD("Haier", "initialization_2: %s ", raw.c_str());
+    Initialization().Initialize();
   }
 
   void loop() override {

@@ -5,6 +5,7 @@ esphome:
   includes:
     - constants.h
     - utility.h
+    - initialization.h
     - control_command.h
     - status.h
     - Haier.h

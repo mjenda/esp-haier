@@ -12,7 +12,9 @@
 #include <string>
 
 #include "constants.h"
+#include "utility.h"
 #include "control_command.h"
+#include "status.h"
 
 using namespace esphome;
 using namespace esphome::climate;
@@ -20,9 +22,6 @@ using namespace esphome::climate;
 class Haier : public Climate, public PollingComponent {
 
 private:
-  byte lastCRC;
-  byte status[47];
-
   byte initialization_1[13] = {0xFF, 0xFF, 0x0A, 0x0,  0x0,  0x0, 0x0,
                                0x0,  0x00, 0x61, 0x00, 0x07, 0x72};
   byte initialization_2[13] = {0xFF, 0xFF, 0x08, 0x40, 0x0,  0x0, 0x0,
@@ -33,6 +32,7 @@ private:
                             0x00, 0x00, 0x00, 0x01, 0x5D, 0x01,
                             0x00, 0x01, 0xAC, 0xBD, 0xFB};
   ControlCommand control_command_;
+  Status status_;
 
   byte climate_mode_fan_speed = FAN_AUTO;
   byte climate_mode_setpoint = 0x0A;
@@ -42,97 +42,8 @@ private:
 
   bool first_status_received = false;
 
-  // Some vars for debuging purposes
-  byte previous_status[47];
-  bool previous_status_init = false;
-
-  // Functions
-  byte GetHvacModeStatus() { return status[MODE_OFFSET] & MODE_MSK; }
-  byte GetTemperatureSetpointStatus() { return status[SET_POINT_OFFSET]; }
-
-  byte GetFanSpeedStatus() { return status[MODE_OFFSET] & FAN_MSK; }
-
-  byte GetHorizontalSwingStatus() { return status[HORIZONTAL_SWING_OFFSET]; }
-
-  byte GetVerticalSwingStatus() { return status[VERTICAL_SWING_OFFSET]; }
-
-  bool GetQuietModeStatus(void) {
-    bool ret = false;
-    byte tmp;
-    byte msk;
-
-    msk = (0x01 << QUIET_BIT);
-    tmp = status[STATUS_DATA_OFFSET] & msk;
-
-    if (tmp != 0)
-      ret = true;
-
-    return ret;
-  }
-
-  bool GetPurifyStatus(void) {
-    bool ret = false;
-    byte tmp;
-    byte msk;
-
-    msk = (0x01 << PURIFY_BIT);
-    tmp = status[STATUS_DATA_OFFSET] & msk;
-
-    if (tmp != 0)
-      ret = true;
-
-    return ret;
-  }
-
-  bool GetPowerStatus(void) {
-    bool ret = false;
-    byte tmp;
-    byte msk;
-
-    msk = (0x01 << POWER_BIT);
-    tmp = status[STATUS_DATA_OFFSET] & msk;
-
-    if (tmp != 0)
-      ret = true;
-
-    return ret;
-  }
-
-  bool GetFastModeStatus(void) {
-    bool ret = false;
-    byte tmp;
-    byte msk;
-
-    msk = (0x01 << AUTO_FAN_MAX_BIT);
-    tmp = status[STATUS_DATA_OFFSET] & msk;
-
-    if (tmp != 0)
-      ret = true;
-
-    return ret;
-  }
-
-  void CompareStatusByte() {
-    int i;
-
-    if (previous_status_init == false) {
-      for (i = 0; i < sizeof(status); i++) {
-        previous_status[i] = status[i];
-      }
-      previous_status_init = true;
-    }
-
-    for (i = 0; i < sizeof(status); i++) {
-      if (status[i] != previous_status[i]) {
-        ESP_LOGD("Debug", "Status byte %d: 0x%X --> 0x%X ", i,
-                 previous_status[i], status[i]);
-      }
-      previous_status[i] = status[i];
-    }
-  }
-
 public:
-  Haier() : PollingComponent(5 * 1000) { lastCRC = 0; }
+  Haier() : PollingComponent(5 * 1000) {}
 
   void setup() override {
 
@@ -148,7 +59,7 @@ public:
   }
 
   void loop() override {
-    byte data[47];
+    std::array<byte, 47> data;
     if (Serial.available() > 0) {
       if (Serial.read() != 255)
         return;
@@ -158,12 +69,11 @@ public:
       data[0] = 255;
       data[1] = 255;
 
-      Serial.readBytes(data + 2, sizeof(data) - 2);
+      Serial.readBytes(data.data() + 2, data.size() - 2);
 
       // If is a status response
       if (data[COMMAND_OFFSET] == RESPONSE_POLL) {
-        // Update the status frame
-        memcpy(status, data, sizeof(status));
+        status_.Update(data);
         parseStatus();
       }
     }
@@ -203,50 +113,39 @@ protected:
 
 public:
   void parseStatus() {
+    status_.EspLog();
+    byte check = getChecksum(status_.Data(), status_.Size());
 
-    auto raw = getHex(status, sizeof(status));
-    ESP_LOGD("Haier", "Readed message ALBA: %s ", raw.c_str());
-
-    byte check = getChecksum(status, sizeof(status));
-
-    if (check != status[CRC_OFFSET(status)]) {
-      ESP_LOGW("Haier", "Invalid checksum (%d vs %d)", check,
-               status[CRC_OFFSET(status)]);
+    if (!status_.ValidateChecksum()) {
       return;
     }
 
-    lastCRC = check;
+    current_temperature = status_.GetCurrentTemperature();
+    target_temperature = status_.GetTargetTemperature();
 
-    current_temperature = status[TEMPERATURE_OFFSET] / 2;
-    target_temperature = status[SET_POINT_OFFSET] + 16;
-
-    if (current_temperature < MIN_VALID_INTERNAL_TEMP ||
-        current_temperature > MAX_VALID_INTERNAL_TEMP ||
-        target_temperature < MIN_SET_TEMPERATURE ||
-        target_temperature > MAX_SET_TEMPERATURE) {
-      ESP_LOGW("Haier", "Invalid temperatures");
+    if (!status_.ValidateTemperature()) {
       return;
     }
 
     // Read all the info from the status message and update values in control
     // message so the next message is updated This is usefull if there are
     // manual changes with the remote control
-    control_command_.SetPowerControl(GetPowerStatus());
-    control_command_.SetHvacModeControl(GetHvacModeStatus());
-    control_command_.SetPurifyControl(GetPurifyStatus());
-    control_command_.SetQuietModeControl(GetQuietModeStatus());
-    control_command_.SetFastModeControl(GetFastModeStatus());
-    control_command_.SetFanSpeedControl(GetFanSpeedStatus());
-    control_command_.SetHorizontalSwingControl(GetHorizontalSwingStatus());
-    control_command_.SetVerticalSwingControl(GetVerticalSwingStatus());
-    control_command_.SetTemperatureSetpointControl(GetTemperatureSetpointStatus());
+    control_command_.SetPowerControl(status_.GetPowerStatus());
+    control_command_.SetHvacModeControl(status_.GetHvacModeStatus());
+    control_command_.SetPurifyControl(status_.GetPurifyStatus());
+    control_command_.SetQuietModeControl(status_.GetQuietModeStatus());
+    control_command_.SetFastModeControl(status_.GetFastModeStatus());
+    control_command_.SetFanSpeedControl(status_.GetFanSpeedStatus());
+    control_command_.SetHorizontalSwingControl(status_.GetHorizontalSwingStatus());
+    control_command_.SetVerticalSwingControl(status_.GetVerticalSwingStatus());
+    control_command_.SetTemperatureSetpointControl(status_.GetTemperatureSetpointStatus());
 
-    if (GetHvacModeStatus() == MODE_FAN) {
-      fan_mode_fan_speed = GetFanSpeedStatus();
-      fan_mode_setpoint = GetTemperatureSetpointStatus();
+    if (status_.GetHvacModeStatus() == MODE_FAN) {
+      fan_mode_fan_speed = status_.GetFanSpeedStatus();
+      fan_mode_setpoint = status_.GetTemperatureSetpointStatus();
     } else {
-      climate_mode_fan_speed = GetFanSpeedStatus();
-      climate_mode_setpoint = GetTemperatureSetpointStatus();
+      climate_mode_fan_speed = status_.GetFanSpeedStatus();
+      climate_mode_setpoint = status_.GetTemperatureSetpointStatus();
     }
 
     // Flag to enable modifications from UI as we now know the status of the A/C
@@ -263,15 +162,15 @@ public:
     // GetHorizontalSwingStatus()); ESP_LOGW("Debug", "Vertical Swing Status =
     // 0x%X", GetVerticalSwingStatus()); ESP_LOGW("Debug", "Set Point Status =
     // 0x%X", GetTemperatureSetpointStatus());
-    CompareStatusByte();
+    status_.CompareStatusByte();
 
     // Update home assistant component
 
-    if (GetPowerStatus() == false) {
+    if (status_.GetPowerStatus() == false) {
       mode = CLIMATE_MODE_OFF;
     } else {
       // Check current hvac mode
-      switch (GetHvacModeStatus()) {
+      switch (status_.GetHvacModeStatus()) {
       case MODE_COOL:
         mode = CLIMATE_MODE_COOL;
         break;
@@ -291,15 +190,15 @@ public:
 
       // Get fan speed
       // If "quiet mode" is set we will read it as "fan low"
-      if (GetQuietModeStatus() == true) {
+      if (status_.GetQuietModeStatus() == true) {
         fan_mode = CLIMATE_FAN_LOW;
       }
       // If we detect that fast mode is on the we read it as "fan high"
-      else if (GetFastModeStatus() == true) {
+      else if (status_.GetFastModeStatus() == true) {
         fan_mode = CLIMATE_FAN_HIGH;
       } else {
         // No quiet or fast so we read the actual fan speed.
-        switch (GetFanSpeedStatus()) {
+        switch (status_.GetFanSpeedStatus()) {
         case FAN_AUTO:
           fan_mode = CLIMATE_FAN_AUTO;
           break;
@@ -322,12 +221,12 @@ public:
 
       // Check the status of the swings (vertical and horizontal and translate
       // according component configuration
-      if ((GetHorizontalSwingStatus() == HORIZONTAL_SWING_AUTO) &&
-          (GetVerticalSwingStatus() == VERTICAL_SWING_AUTO)) {
+      if ((status_.GetHorizontalSwingStatus() == HORIZONTAL_SWING_AUTO) &&
+          (status_.GetVerticalSwingStatus() == VERTICAL_SWING_AUTO)) {
         swing_mode = CLIMATE_SWING_BOTH;
-      } else if (GetHorizontalSwingStatus() == HORIZONTAL_SWING_AUTO) {
+      } else if (status_.GetHorizontalSwingStatus() == HORIZONTAL_SWING_AUTO) {
         swing_mode = CLIMATE_SWING_HORIZONTAL;
-      } else if (GetVerticalSwingStatus() == VERTICAL_SWING_AUTO) {
+      } else if (status_.GetVerticalSwingStatus() == VERTICAL_SWING_AUTO) {
         swing_mode = CLIMATE_SWING_VERTICAL;
       } else {
         swing_mode = CLIMATE_SWING_OFF;
@@ -356,7 +255,7 @@ public:
 
       switch (new_mode) {
       case CLIMATE_MODE_OFF:
-        control_command_.SetPowerControl(!GetPowerStatus());
+        control_command_.SetPowerControl(!status_.GetPowerStatus());
         sendData(control_command_.Data(), control_command_.Size());
         break;
 
@@ -492,64 +391,5 @@ public:
       target_temperature = temp;
       this->publish_state();
     }
-  }
-
-  void sendData(byte *message, byte size) {
-    byte crc_offset = CRC_OFFSET(message);
-    byte crc = getChecksum(message, size);
-    word crc_16 = crc16(0, &(message[2]), crc_offset - 2);
-
-    // Updates the crc
-    message[crc_offset] = crc;
-    message[crc_offset + 1] = (crc_16 >> 8) & 0xFF;
-    message[crc_offset + 2] = crc_16 & 0xFF;
-
-    Serial.write(message, size);
-
-    auto raw = getHex(message, size);
-    ESP_LOGD("Haier", "Message sent: %s  - CRC: %X - CRC16: %X", raw.c_str(),
-             crc, crc_16);
-  }
-  String getHex(byte *message, byte size) {
-
-    String raw;
-
-    for (int i = 0; i < size; i++) {
-      raw += " " + String(message[i]);
-    }
-    raw.toUpperCase();
-
-    return raw;
-  }
-
-  byte getChecksum(const byte *message, size_t size) {
-    byte position = CRC_OFFSET(message);
-    byte crc = 0;
-
-    if (size < (position)) {
-      ESP_LOGE("Control", "frame format error (size = %d vs length = %d)", size,
-               message[2]);
-      return 0;
-    }
-
-    for (int i = 2; i < position; i++)
-      crc += message[i];
-
-    return crc;
-  }
-
-  unsigned crc16(unsigned crc, unsigned char *buf, size_t len) {
-    while (len--) {
-      crc ^= *buf++;
-      crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
-      crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
-      crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
-      crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
-      crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
-      crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
-      crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
-      crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
-    }
-    return crc;
   }
 };

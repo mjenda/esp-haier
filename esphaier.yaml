@@ -4,7 +4,9 @@ esphome:
   board: d1_mini
   includes:
     - constants.h
+    - utility.h
     - control_command.h
+    - status.h
     - Haier.h
 
 logger:

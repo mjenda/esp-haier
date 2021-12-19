@@ -24,9 +24,6 @@ using namespace esphome::climate;
 class Haier : public Climate, public PollingComponent {
 
 private:
-  byte power_command[17] = {0xFF, 0xFF, 0x0C, 0x40, 0x00, 0x00,
-                            0x00, 0x00, 0x00, 0x01, 0x5D, 0x01,
-                            0x00, 0x01, 0xAC, 0xBD, 0xFB};
   ControlCommand control_command_;
   Status status_;
 

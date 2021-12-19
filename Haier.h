@@ -40,8 +40,6 @@ public:
   void onStatusReceived() {
     status_.LogStatus();
 
-    control_command_.UpdateFromStatus(status_);
-
     // Update home assistant component
     mode = status_.GetMode();
     fan_mode = status_.GetFanMode();
@@ -62,6 +60,10 @@ public:
       ESP_LOGD("EspHaier Control", "No action, first poll answer not received");
       return;
     }
+
+    ControlCommand control_command_;
+
+    control_command_.UpdateFromStatus(status_);
 
     if (call.get_mode().has_value()) {
       // User requested mode change
@@ -240,6 +242,5 @@ protected:
   }
 
 private:
-  ControlCommand control_command_;
   Status status_;
 };

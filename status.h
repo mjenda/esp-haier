@@ -243,8 +243,11 @@ public:
     Serial.readBytes(data.data() + 2, data.size() - 2);
 
     // If is a status response
-    if (data[COMMAND_OFFSET] != RESPONSE_POLL)
+    if (data[COMMAND_OFFSET] != RESPONSE_POLL) {
+      ESP_LOGD("EspHaier Status", "Received message is not a status: 0x%X",
+               data[COMMAND_OFFSET]);
       return false;
+    }
 
     Update(data);
 
@@ -259,8 +262,8 @@ public:
 
   void PrintDebug() {
     if (true)
-      return ESP_LOGW("EspHaier Status", "Power Status = 0x%X",
-                      GetPowerStatus());
+      return;
+    ESP_LOGW("EspHaier Status", "Power Status = 0x%X", GetPowerStatus());
     ESP_LOGW("EspHaier Status", "HVAC return 0x%X", GetHvacModeStatus());
     ESP_LOGW("EspHaier Status", "Purify status = 0x%X", GetPurifyStatus());
     ESP_LOGW("EspHaier Status", "Quiet mode Status = 0x%X",

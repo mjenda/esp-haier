@@ -155,10 +155,10 @@ public:
     ClimateMode new_mode;
     bool new_control_cmd = false;
 
-    ESP_LOGD("Control", "Control call");
+    ESP_LOGD("EspHaier Control", "Control call");
 
     if (!status_.GetFirstStatusReceived()) {
-      ESP_LOGD("Control", "No action, first poll answer not received");
+      ESP_LOGD("EspHaier Control", "No action, first poll answer not received");
       return;
     }
 
@@ -166,7 +166,7 @@ public:
       // User requested mode change
       new_mode = *call.get_mode();
 
-      ESP_LOGD("Control", "*call.get_mode() = %d", new_mode);
+      ESP_LOGD("EspHaier Control", "*call.get_mode() = %d", new_mode);
 
       switch (new_mode) {
       case CLIMATE_MODE_OFF:
@@ -305,7 +305,7 @@ public:
 
     if (call.get_target_temperature().has_value()) {
       float temp = *call.get_target_temperature();
-      ESP_LOGD("Control", "*call.get_target_temperature() = %f", temp);
+      ESP_LOGD("EspHaier Control", "*call.get_target_temperature() = %f", temp);
       control_command_.SetPointOffset(temp);
       sendData(control_command_.Data(), control_command_.Size());
       target_temperature = temp;

@@ -57,6 +57,6 @@
     Serial.write(message, size);
 
     auto raw = getHex(message, size);
-    ESP_LOGD("Haier", "Message sent: %s  - CRC: %X - CRC16: %X", raw.c_str(),
+    ESP_LOGD("EspHaier Utility", "Message sent: %s  - CRC: %X - CRC16: %X", raw.c_str(),
              crc, crc_16);
   }

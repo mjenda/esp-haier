@@ -102,7 +102,7 @@ public:
 
     for (i = 0; i < sizeof(status_); i++) {
       if (status_[i] != previous_status_[i]) {
-        ESP_LOGD("Debug", "status_ byte %d: 0x%X --> 0x%X ", i,
+        ESP_LOGD("EspHaier Status", "status_ byte %d: 0x%X --> 0x%X ", i,
                  previous_status_[i], status_[i]);
       }
       previous_status_[i] = status_[i];
@@ -128,14 +128,14 @@ public:
 
   void EspLog() const {
     auto raw = getHex(Data(), Size());
-    ESP_LOGD("Haier", "Readed message ALBA: %s ", raw.c_str());
+    ESP_LOGD("EspHaier Status", "Readed message ALBA: %s ", raw.c_str());
   }
 
   bool ValidateChecksum() const {
     byte check = getChecksum(Data(), Size());
 
     if (check != status_[CRC_OFFSET(status_)]) {
-      ESP_LOGW("Haier", "Invalid checksum (%d vs %d)", check,
+      ESP_LOGW("Status", "Invalid checksum (%d vs %d)", check,
                status_[CRC_OFFSET(status_)]);
       return false;
     }
@@ -180,7 +180,7 @@ public:
   void SendPoll() const {
     Serial.write(poll_.data(), poll_.size());
     const auto raw = getHex(poll_.data(), poll_.size());
-    ESP_LOGD("Haier", "POLL: %s ", raw.c_str());
+    ESP_LOGD("EspHaier Status", "POLL: %s ", raw.c_str());
   }
 
 private:

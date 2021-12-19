@@ -14,7 +14,7 @@ private:
     delay(1000);
     Serial.write(initialization.data(), initialization.size());
     auto raw = getHex(initialization.data(), initialization.size());
-    ESP_LOGD("Haier", "initialization: %s ", raw.c_str());
+    ESP_LOGD("EspHaier Initialization", "initialization: %s ", raw.c_str());
   }
 
   std::array<byte, 13> initialization_1{{0xFF, 0xFF, 0x0A, 0x0, 0x0, 0x0, 0x0,

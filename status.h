@@ -166,7 +166,7 @@ public:
   byte GetFanModeFanSpeed() const { return fan_mode_fan_speed_; }
   byte GetFanModeSetpoint() const { return fan_mode_setpoint_; }
 
-  void StorePreviousStatusForDebug() {
+  void LogChangedBytes() {
     PrintDebug();
 
     int i;
@@ -204,9 +204,10 @@ public:
   const byte *Data() const { return status_.data(); }
   std::size_t Size() const { return status_.size(); }
 
-  void EspLog() const {
+  void LogStatus() {
     auto raw = getHex(Data(), Size());
     ESP_LOGD("EspHaier Status", "Readed message ALBA: %s ", raw.c_str());
+    LogChangedBytes();
   }
 
   bool ValidateChecksum() const {
@@ -234,25 +235,20 @@ public:
     return true;
   }
 
-  void OnStatusReceived(std::function<void()> update_status) {
-    std::array<byte, 47> data;
-    if (Serial.available() > 0) {
-      if (Serial.read() != 255)
-        return;
-      if (Serial.read() != 255)
-        return;
+  bool OnPendingData() {
+    std::array<byte, 47> data = {{255, 255}};
+    if (Serial.available() == 0 || Serial.read() != 255 || Serial.read() != 255)
+      return false;
 
-      data[0] = 255;
-      data[1] = 255;
+    Serial.readBytes(data.data() + 2, data.size() - 2);
 
-      Serial.readBytes(data.data() + 2, data.size() - 2);
+    // If is a status response
+    if (data[COMMAND_OFFSET] != RESPONSE_POLL)
+      return false;
 
-      // If is a status response
-      if (data[COMMAND_OFFSET] == RESPONSE_POLL) {
-        Update(data);
-        update_status();
-      }
-    }
+    Update(data);
+
+    return ValidateChecksum() && ValidateTemperature();
   }
 
   void SendPoll() const {

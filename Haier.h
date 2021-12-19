@@ -18,7 +18,6 @@
 #include "status.h"
 #include "utility.h"
 
-
 using namespace esphome;
 using namespace esphome::climate;
 
@@ -32,21 +31,16 @@ public:
   }
 
   void loop() override {
-    status_.OnStatusReceived(std::bind(&Haier::onStatusReceived, this));
+    if (status_.OnPendingData())
+      onStatusReceived();
   }
 
   void update() override { status_.SendPoll(); }
 
   void onStatusReceived() {
-    status_.EspLog();
-
-    if (!status_.ValidateChecksum() || !status_.ValidateTemperature()) {
-      return;
-    }
+    status_.LogStatus();
 
     control_command_.UpdateFromStatus(status_);
-
-    status_.StorePreviousStatusForDebug();
 
     // Update home assistant component
     mode = status_.GetMode();

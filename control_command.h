@@ -3,6 +3,7 @@
 #include <array>
 
 #include "constants.h"
+#include "status.h"
 
 class ControlCommand {
 public:
@@ -86,6 +87,21 @@ public:
 
   void SetPointOffset(float temp) {
     control_command_[SET_POINT_OFFSET] = (uint16)temp - 16;
+  }
+
+  // Read all the info from the status message and update values in control
+  // message so the next message is updated This is usefull if there are
+  // manual changes with the remote control
+  void UpdateFromStatus(const Status &status) {
+    SetPowerControl(status.GetPowerStatus());
+    SetHvacModeControl(status.GetHvacModeStatus());
+    SetPurifyControl(status.GetPurifyStatus());
+    SetQuietModeControl(status.GetQuietModeStatus());
+    SetFastModeControl(status.GetFastModeStatus());
+    SetFanSpeedControl(status.GetFanSpeedStatus());
+    SetHorizontalSwingControl(status.GetHorizontalSwingStatus());
+    SetVerticalSwingControl(status.GetVerticalSwingStatus());
+    SetTemperatureSetpointControl(status.GetTemperatureSetpointStatus());
   }
 
   byte* Data() { return control_command_.data(); }

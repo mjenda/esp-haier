@@ -81,6 +81,82 @@ public:
     return status_[TEMPERATURE_OFFSET] / 2;
   }
 
+  ClimateMode GetMode() const {
+    if (!GetPowerStatus())
+      return CLIMATE_MODE_OFF;
+
+    // Check current hvac mode
+    switch (GetHvacModeStatus()) {
+    case MODE_COOL:
+      return CLIMATE_MODE_COOL;
+      break;
+    case MODE_HEAT:
+      return CLIMATE_MODE_HEAT;
+      break;
+    case MODE_DRY:
+      return CLIMATE_MODE_DRY;
+      break;
+    case MODE_FAN:
+      return CLIMATE_MODE_FAN_ONLY;
+      break;
+    case MODE_AUTO:
+    default:
+      return CLIMATE_MODE_HEAT_COOL;
+    }
+  }
+
+  ClimateFanMode GetFanMode() const {
+    if (!GetPowerStatus())
+      return CLIMATE_FAN_OFF;
+
+    // If "quiet mode" is set we will read it as "fan low"
+    if (GetQuietModeStatus()) {
+      return CLIMATE_FAN_LOW;
+    }
+    // If we detect that fast mode is on the we read it as "fan high"
+    else if (GetFastModeStatus()) {
+      return CLIMATE_FAN_HIGH;
+    } else {
+      // No quiet or fast so we read the actual fan speed.
+      switch (GetFanSpeedStatus()) {
+      case FAN_AUTO:
+        return CLIMATE_FAN_AUTO;
+        break;
+      case FAN_MID:
+        return CLIMATE_FAN_MEDIUM;
+        break;
+        // case FAN_MIDDLE:
+        //    return CLIMATE_FAN_MIDDLE;
+        //    break;
+      case FAN_LOW:
+        return CLIMATE_FAN_LOW;
+        break;
+      case FAN_HIGH:
+        return CLIMATE_FAN_HIGH;
+        break;
+      default:
+        return CLIMATE_FAN_AUTO;
+      }
+    }
+  }
+
+  ClimateSwingMode GetSwingMode() const {
+    if (!GetPowerStatus())
+      return CLIMATE_SWING_OFF;
+    // Check the status of the swings (vertical and horizontal and translate
+    // according component configuration
+    if ((GetHorizontalSwingStatus() == HORIZONTAL_SWING_AUTO) &&
+        (GetVerticalSwingStatus() == VERTICAL_SWING_AUTO)) {
+      return CLIMATE_SWING_BOTH;
+    } else if (GetHorizontalSwingStatus() == HORIZONTAL_SWING_AUTO) {
+      return CLIMATE_SWING_HORIZONTAL;
+    } else if (GetVerticalSwingStatus() == VERTICAL_SWING_AUTO) {
+      return CLIMATE_SWING_VERTICAL;
+    } else {
+      return CLIMATE_SWING_OFF;
+    }
+  }
+
   float GetTargetTemperature() const { return status_[SET_POINT_OFFSET] + 16; }
 
   bool GetFirstStatusReceived() const { return first_status_received_; }
@@ -90,7 +166,9 @@ public:
   byte GetFanModeFanSpeed() const { return fan_mode_fan_speed_; }
   byte GetFanModeSetpoint() const { return fan_mode_setpoint_; }
 
-  void CompareStatusByte() {
+  void StorePreviousStatusForDebug() {
+    PrintDebug();
+
     int i;
 
     if (!previous_status_init_) {
@@ -135,7 +213,7 @@ public:
     byte check = getChecksum(Data(), Size());
 
     if (check != status_[CRC_OFFSET(status_)]) {
-      ESP_LOGW("Status", "Invalid checksum (%d vs %d)", check,
+      ESP_LOGW("EspHaier Status", "Invalid checksum (%d vs %d)", check,
                status_[CRC_OFFSET(status_)]);
       return false;
     }
@@ -150,13 +228,13 @@ public:
         current_temperature > MAX_VALID_INTERNAL_TEMP ||
         target_temperature < MIN_SET_TEMPERATURE ||
         target_temperature > MAX_SET_TEMPERATURE) {
-      ESP_LOGW("Haier", "Invalid temperatures");
+      ESP_LOGW("EspHaier Status", "Invalid temperatures");
       return false;
     }
     return true;
   }
 
-  void Loop(std::function<void()> update_status) {
+  void OnStatusReceived(std::function<void()> update_status) {
     std::array<byte, 47> data;
     if (Serial.available() > 0) {
       if (Serial.read() != 255)
@@ -181,6 +259,24 @@ public:
     Serial.write(poll_.data(), poll_.size());
     const auto raw = getHex(poll_.data(), poll_.size());
     ESP_LOGD("EspHaier Status", "POLL: %s ", raw.c_str());
+  }
+
+  void PrintDebug() {
+    if (true)
+      return ESP_LOGW("EspHaier Status", "Power Status = 0x%X",
+                      GetPowerStatus());
+    ESP_LOGW("EspHaier Status", "HVAC return 0x%X", GetHvacModeStatus());
+    ESP_LOGW("EspHaier Status", "Purify status = 0x%X", GetPurifyStatus());
+    ESP_LOGW("EspHaier Status", "Quiet mode Status = 0x%X",
+             GetQuietModeStatus());
+    ESP_LOGW("EspHaier Status", "Fast mode Status = 0x%X", GetFastModeStatus());
+    ESP_LOGW("EspHaier Status", "Fan speed Status = 0x%X", GetFanSpeedStatus());
+    ESP_LOGW("EspHaier Status", "Horizontal Swing Status = 0x%X",
+             GetHorizontalSwingStatus());
+    ESP_LOGW("EspHaier Status", "Vertical Swing Status = 0x%X",
+             GetVerticalSwingStatus());
+    ESP_LOGW("EspHaier Status", "Set Point Status = 0x%X",
+             GetTemperatureSetpointStatus());
   }
 
 private:

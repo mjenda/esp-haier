@@ -12,7 +12,6 @@
 #include <functional>
 #include <string>
 
-
 #include "constants.h"
 #include "control_command.h"
 #include "initialization.h"
@@ -32,121 +31,29 @@ public:
     Initialization().Initialize();
   }
 
-  void loop() override { status_.Loop(std::bind(&Haier::parseStatus, this)); }
+  void loop() override {
+    status_.OnStatusReceived(std::bind(&Haier::onStatusReceived, this));
+  }
 
   void update() override { status_.SendPoll(); }
 
-  void parseStatus() {
+  void onStatusReceived() {
     status_.EspLog();
-    byte check = getChecksum(status_.Data(), status_.Size());
 
-    if (!status_.ValidateChecksum()) {
+    if (!status_.ValidateChecksum() || !status_.ValidateTemperature()) {
       return;
     }
 
-    current_temperature = status_.GetCurrentTemperature();
-    target_temperature = status_.GetTargetTemperature();
+    control_command_.UpdateFromStatus(status_);
 
-    if (!status_.ValidateTemperature()) {
-      return;
-    }
-
-    // Read all the info from the status message and update values in control
-    // message so the next message is updated This is usefull if there are
-    // manual changes with the remote control
-    control_command_.SetPowerControl(status_.GetPowerStatus());
-    control_command_.SetHvacModeControl(status_.GetHvacModeStatus());
-    control_command_.SetPurifyControl(status_.GetPurifyStatus());
-    control_command_.SetQuietModeControl(status_.GetQuietModeStatus());
-    control_command_.SetFastModeControl(status_.GetFastModeStatus());
-    control_command_.SetFanSpeedControl(status_.GetFanSpeedStatus());
-    control_command_.SetHorizontalSwingControl(
-        status_.GetHorizontalSwingStatus());
-    control_command_.SetVerticalSwingControl(status_.GetVerticalSwingStatus());
-    control_command_.SetTemperatureSetpointControl(
-        status_.GetTemperatureSetpointStatus());
-
-    // DEBUG DATA, uncomment what's needed
-    // ESP_LOGW("Debug", "Power Status = 0x%X", GetPowerStatus());
-    // ESP_LOGW("Debug", "HVAC Mode = 0x%X", GetHvacModeStatus());
-    // ESP_LOGW("Debug", "Purify status = 0x%X", GetPurifyStatus());
-    // ESP_LOGW("Debug", "Quiet mode Status = 0x%X", GetQuietModeStatus());
-    // ESP_LOGW("Debug", "Fast mode Status = 0x%X", GetFastModeStatus());
-    // ESP_LOGW("Debug", "Fan speed Status = 0x%X", GetFanSpeedStatus());
-    // ESP_LOGW("Debug", "Horizontal Swing Status = 0x%X",
-    // GetHorizontalSwingStatus()); ESP_LOGW("Debug", "Vertical Swing Status =
-    // 0x%X", GetVerticalSwingStatus()); ESP_LOGW("Debug", "Set Point Status =
-    // 0x%X", GetTemperatureSetpointStatus());
-    status_.CompareStatusByte();
+    status_.StorePreviousStatusForDebug();
 
     // Update home assistant component
-
-    if (status_.GetPowerStatus() == false) {
-      mode = CLIMATE_MODE_OFF;
-    } else {
-      // Check current hvac mode
-      switch (status_.GetHvacModeStatus()) {
-      case MODE_COOL:
-        mode = CLIMATE_MODE_COOL;
-        break;
-      case MODE_HEAT:
-        mode = CLIMATE_MODE_HEAT;
-        break;
-      case MODE_DRY:
-        mode = CLIMATE_MODE_DRY;
-        break;
-      case MODE_FAN:
-        mode = CLIMATE_MODE_FAN_ONLY;
-        break;
-      case MODE_AUTO:
-      default:
-        mode = CLIMATE_MODE_HEAT_COOL;
-      }
-
-      // Get fan speed
-      // If "quiet mode" is set we will read it as "fan low"
-      if (status_.GetQuietModeStatus() == true) {
-        fan_mode = CLIMATE_FAN_LOW;
-      }
-      // If we detect that fast mode is on the we read it as "fan high"
-      else if (status_.GetFastModeStatus() == true) {
-        fan_mode = CLIMATE_FAN_HIGH;
-      } else {
-        // No quiet or fast so we read the actual fan speed.
-        switch (status_.GetFanSpeedStatus()) {
-        case FAN_AUTO:
-          fan_mode = CLIMATE_FAN_AUTO;
-          break;
-        case FAN_MID:
-          fan_mode = CLIMATE_FAN_MEDIUM;
-          break;
-          // case FAN_MIDDLE:
-          //    fan_mode = CLIMATE_FAN_MIDDLE;
-          //    break;
-        case FAN_LOW:
-          fan_mode = CLIMATE_FAN_LOW;
-          break;
-        case FAN_HIGH:
-          fan_mode = CLIMATE_FAN_HIGH;
-          break;
-        default:
-          fan_mode = CLIMATE_FAN_AUTO;
-        }
-      }
-
-      // Check the status of the swings (vertical and horizontal and translate
-      // according component configuration
-      if ((status_.GetHorizontalSwingStatus() == HORIZONTAL_SWING_AUTO) &&
-          (status_.GetVerticalSwingStatus() == VERTICAL_SWING_AUTO)) {
-        swing_mode = CLIMATE_SWING_BOTH;
-      } else if (status_.GetHorizontalSwingStatus() == HORIZONTAL_SWING_AUTO) {
-        swing_mode = CLIMATE_SWING_HORIZONTAL;
-      } else if (status_.GetVerticalSwingStatus() == VERTICAL_SWING_AUTO) {
-        swing_mode = CLIMATE_SWING_VERTICAL;
-      } else {
-        swing_mode = CLIMATE_SWING_OFF;
-      }
-    }
+    mode = status_.GetMode();
+    fan_mode = status_.GetFanMode();
+    swing_mode = status_.GetSwingMode();
+    current_temperature = status_.GetCurrentTemperature();
+    target_temperature = status_.GetTargetTemperature();
 
     this->publish_state();
   }

@@ -77,7 +77,9 @@ public:
     return ret;
   }
 
-  float GetCurrentTemperature() const { return status_[TEMPERATURE_OFFSET] / 2; }
+  float GetCurrentTemperature() const {
+    return status_[TEMPERATURE_OFFSET] / 2;
+  }
 
   float GetTargetTemperature() const { return status_[SET_POINT_OFFSET] + 16; }
 
@@ -86,23 +88,21 @@ public:
 
     if (previous_status_init == false) {
       for (i = 0; i < sizeof(status_); i++) {
-        previous_status[i] = status_[i];
+        previous_status_[i] = status_[i];
       }
       previous_status_init = true;
     }
 
     for (i = 0; i < sizeof(status_); i++) {
-      if (status_[i] != previous_status[i]) {
+      if (status_[i] != previous_status_[i]) {
         ESP_LOGD("Debug", "status_ byte %d: 0x%X --> 0x%X ", i,
-                 previous_status[i], status_[i]);
+                 previous_status_[i], status_[i]);
       }
-      previous_status[i] = status_[i];
+      previous_status_[i] = status_[i];
     }
   }
 
-  void Update(const std::array<byte, 47> &data) {
-    status_ = data;
-  }
+  void Update(const std::array<byte, 47> &data) { status_ = data; }
 
   byte *Data() { return status_.data(); }
   const byte *Data() const { return status_.data(); }
@@ -138,9 +138,38 @@ public:
     return true;
   }
 
+  void Loop(std::function<void()> update_status) {
+    std::array<byte, 47> data;
+    if (Serial.available() > 0) {
+      if (Serial.read() != 255)
+        return;
+      if (Serial.read() != 255)
+        return;
+
+      data[0] = 255;
+      data[1] = 255;
+
+      Serial.readBytes(data.data() + 2, data.size() - 2);
+
+      // If is a status response
+      if (data[COMMAND_OFFSET] == RESPONSE_POLL) {
+        Update(data);
+        update_status();
+      }
+    }
+  }
+
+  void SendPoll() const {
+    Serial.write(poll_.data(), poll_.size());
+    const auto raw = getHex(poll_.data(), poll_.size());
+    ESP_LOGD("Haier", "POLL: %s ", raw.c_str());
+  }
+
 private:
   bool previous_status_init = false;
 
   std::array<byte, 47> status_{{}};
-  std::array<byte, 47> previous_status{{}};
+  std::array<byte, 47> previous_status_{{}};
+  std::array<byte, 15> poll_{{0xFF, 0xFF, 0x0A, 0x40, 0x00, 0x00, 0x00, 0x00,
+                              0x00, 0x01, 0x4D, 0x01, 0x99, 0xB3, 0xB4}};
 };

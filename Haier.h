@@ -10,6 +10,7 @@
 
 #include "esphome.h"
 #include <string>
+#include <functional>
 
 #include "constants.h"
 #include "utility.h"
@@ -23,8 +24,6 @@ using namespace esphome::climate;
 class Haier : public Climate, public PollingComponent {
 
 private:
-  byte poll[15] = {0xFF, 0xFF, 0x0A, 0x40, 0x00, 0x00, 0x00, 0x00,
-                   0x00, 0x01, 0x4D, 0x01, 0x99, 0xB3, 0xB4};
   byte power_command[17] = {0xFF, 0xFF, 0x0C, 0x40, 0x00, 0x00,
                             0x00, 0x00, 0x00, 0x01, 0x5D, 0x01,
                             0x00, 0x01, 0xAC, 0xBD, 0xFB};
@@ -48,31 +47,11 @@ public:
   }
 
   void loop() override {
-    std::array<byte, 47> data;
-    if (Serial.available() > 0) {
-      if (Serial.read() != 255)
-        return;
-      if (Serial.read() != 255)
-        return;
-
-      data[0] = 255;
-      data[1] = 255;
-
-      Serial.readBytes(data.data() + 2, data.size() - 2);
-
-      // If is a status response
-      if (data[COMMAND_OFFSET] == RESPONSE_POLL) {
-        status_.Update(data);
-        parseStatus();
-      }
-    }
+    status_.Loop(std::bind(&Haier::parseStatus, this));
   }
 
   void update() override {
-
-    Serial.write(poll, sizeof(poll));
-    auto raw = getHex(poll, sizeof(poll));
-    ESP_LOGD("Haier", "POLL: %s ", raw.c_str());
+    status_.SendPoll();
   }
 
 protected:

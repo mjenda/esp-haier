@@ -83,14 +83,21 @@ public:
 
   float GetTargetTemperature() const { return status_[SET_POINT_OFFSET] + 16; }
 
+  bool GetFirstStatusReceived() const { return first_status_received_; }
+
+  byte GetClimateModeFanSpeed() const { return climate_mode_fan_speed_; }
+  byte GetClimateModeSetpoint() const { return climate_mode_setpoint_; }
+  byte GetFanModeFanSpeed() const { return fan_mode_fan_speed_; }
+  byte GetFanModeSetpoint() const { return fan_mode_setpoint_; }
+
   void CompareStatusByte() {
     int i;
 
-    if (previous_status_init == false) {
+    if (!previous_status_init_) {
       for (i = 0; i < sizeof(status_); i++) {
         previous_status_[i] = status_[i];
       }
-      previous_status_init = true;
+      previous_status_init_ = true;
     }
 
     for (i = 0; i < sizeof(status_); i++) {
@@ -102,7 +109,18 @@ public:
     }
   }
 
-  void Update(const std::array<byte, 47> &data) { status_ = data; }
+  void Update(const std::array<byte, 47> &data) {
+    status_ = data;
+
+    if (GetHvacModeStatus() == MODE_FAN) {
+      fan_mode_fan_speed_ = GetFanSpeedStatus();
+      fan_mode_setpoint_ = GetTemperatureSetpointStatus();
+    } else {
+      climate_mode_fan_speed_ = GetFanSpeedStatus();
+      climate_mode_setpoint_ = GetTemperatureSetpointStatus();
+    }
+    first_status_received_ = true;
+  }
 
   byte *Data() { return status_.data(); }
   const byte *Data() const { return status_.data(); }
@@ -166,7 +184,12 @@ public:
   }
 
 private:
-  bool previous_status_init = false;
+  bool previous_status_init_ = false;
+  byte climate_mode_fan_speed_ = FAN_AUTO;
+  byte climate_mode_setpoint_ = 0x0A;
+  byte fan_mode_fan_speed_ = FAN_HIGH;
+  byte fan_mode_setpoint_ = 0x08;
+  bool first_status_received_ = false;
 
   std::array<byte, 47> status_{{}};
   std::array<byte, 47> previous_status_{{}};

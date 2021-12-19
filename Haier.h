@@ -9,32 +9,21 @@
  **/
 
 #include "esphome.h"
-#include <string>
 #include <functional>
+#include <string>
+
 
 #include "constants.h"
-#include "utility.h"
-#include "initialization.h"
 #include "control_command.h"
+#include "initialization.h"
 #include "status.h"
+#include "utility.h"
+
 
 using namespace esphome;
 using namespace esphome::climate;
 
 class Haier : public Climate, public PollingComponent {
-
-private:
-  ControlCommand control_command_;
-  Status status_;
-
-  byte climate_mode_fan_speed = FAN_AUTO;
-  byte climate_mode_setpoint = 0x0A;
-
-  byte fan_mode_fan_speed = FAN_HIGH;
-  byte fan_mode_setpoint = 0x08;
-
-  bool first_status_received = false;
-
 public:
   Haier() : PollingComponent(5000 /*5 sec*/) {}
 
@@ -43,40 +32,10 @@ public:
     Initialization().Initialize();
   }
 
-  void loop() override {
-    status_.Loop(std::bind(&Haier::parseStatus, this));
-  }
+  void loop() override { status_.Loop(std::bind(&Haier::parseStatus, this)); }
 
-  void update() override {
-    status_.SendPoll();
-  }
+  void update() override { status_.SendPoll(); }
 
-protected:
-  ClimateTraits traits() override {
-    auto traits = climate::ClimateTraits();
-    traits.set_supported_modes(
-        {climate::CLIMATE_MODE_OFF, climate::CLIMATE_MODE_HEAT_COOL,
-         climate::CLIMATE_MODE_HEAT, climate::CLIMATE_MODE_COOL,
-         climate::CLIMATE_MODE_DRY, climate::CLIMATE_MODE_FAN_ONLY});
-
-    traits.set_supported_fan_modes(
-        {climate::CLIMATE_FAN_ON, climate::CLIMATE_FAN_OFF,
-         climate::CLIMATE_FAN_AUTO, climate::CLIMATE_FAN_LOW,
-         climate::CLIMATE_FAN_MEDIUM, climate::CLIMATE_FAN_MIDDLE,
-         climate::CLIMATE_FAN_HIGH});
-
-    traits.set_visual_min_temperature(MIN_SET_TEMPERATURE);
-    traits.set_visual_max_temperature(MAX_SET_TEMPERATURE);
-    traits.set_visual_temperature_step(1.0f);
-    traits.set_supports_current_temperature(true);
-
-    traits.set_supported_swing_modes(
-        {climate::CLIMATE_SWING_OFF, climate::CLIMATE_SWING_BOTH,
-         climate::CLIMATE_SWING_VERTICAL, climate::CLIMATE_SWING_HORIZONTAL});
-    return traits;
-  }
-
-public:
   void parseStatus() {
     status_.EspLog();
     byte check = getChecksum(status_.Data(), status_.Size());
@@ -101,20 +60,11 @@ public:
     control_command_.SetQuietModeControl(status_.GetQuietModeStatus());
     control_command_.SetFastModeControl(status_.GetFastModeStatus());
     control_command_.SetFanSpeedControl(status_.GetFanSpeedStatus());
-    control_command_.SetHorizontalSwingControl(status_.GetHorizontalSwingStatus());
+    control_command_.SetHorizontalSwingControl(
+        status_.GetHorizontalSwingStatus());
     control_command_.SetVerticalSwingControl(status_.GetVerticalSwingStatus());
-    control_command_.SetTemperatureSetpointControl(status_.GetTemperatureSetpointStatus());
-
-    if (status_.GetHvacModeStatus() == MODE_FAN) {
-      fan_mode_fan_speed = status_.GetFanSpeedStatus();
-      fan_mode_setpoint = status_.GetTemperatureSetpointStatus();
-    } else {
-      climate_mode_fan_speed = status_.GetFanSpeedStatus();
-      climate_mode_setpoint = status_.GetTemperatureSetpointStatus();
-    }
-
-    // Flag to enable modifications from UI as we now know the status of the A/C
-    first_status_received = true;
+    control_command_.SetTemperatureSetpointControl(
+        status_.GetTemperatureSetpointStatus());
 
     // DEBUG DATA, uncomment what's needed
     // ESP_LOGW("Debug", "Power Status = 0x%X", GetPowerStatus());
@@ -207,7 +157,7 @@ public:
 
     ESP_LOGD("Control", "Control call");
 
-    if (first_status_received == false) {
+    if (!status_.GetFirstStatusReceived()) {
       ESP_LOGD("Control", "No action, first poll answer not received");
       return;
     }
@@ -230,8 +180,9 @@ public:
 
         // Recover fan_speed and setpoint (when switching to fan_only they are
         // "lost")
-        control_command_.SetFanSpeedControl(climate_mode_fan_speed);
-        control_command_.SetTemperatureSetpointControl(climate_mode_setpoint);
+        control_command_.SetFanSpeedControl(status_.GetClimateModeFanSpeed());
+        control_command_.SetTemperatureSetpointControl(
+            status_.GetClimateModeSetpoint());
 
         sendData(control_command_.Data(), control_command_.Size());
         break;
@@ -242,8 +193,9 @@ public:
 
         // Recover fan_speed and setpoint (when switching to fan_only they are
         // "lost")
-        control_command_.SetFanSpeedControl(climate_mode_fan_speed);
-        control_command_.SetTemperatureSetpointControl(climate_mode_setpoint);
+        control_command_.SetFanSpeedControl(status_.GetClimateModeFanSpeed());
+        control_command_.SetTemperatureSetpointControl(
+            status_.GetClimateModeSetpoint());
 
         sendData(control_command_.Data(), control_command_.Size());
         break;
@@ -254,8 +206,9 @@ public:
 
         // Recover fan_speed and setpoint (when switching to fan_only they are
         // "lost")
-        control_command_.SetFanSpeedControl(climate_mode_fan_speed);
-        control_command_.SetTemperatureSetpointControl(climate_mode_setpoint);
+        control_command_.SetFanSpeedControl(status_.GetClimateModeFanSpeed());
+        control_command_.SetTemperatureSetpointControl(
+            status_.GetClimateModeSetpoint());
 
         sendData(control_command_.Data(), control_command_.Size());
         break;
@@ -265,8 +218,9 @@ public:
         control_command_.SetHvacModeControl(MODE_FAN);
 
         // Recover fan_speed and setpoint (fan_only values are "special")
-        control_command_.SetFanSpeedControl(fan_mode_fan_speed);
-        control_command_.SetTemperatureSetpointControl(fan_mode_setpoint);
+        control_command_.SetFanSpeedControl(status_.GetFanModeFanSpeed());
+        control_command_.SetTemperatureSetpointControl(
+            status_.GetFanModeSetpoint());
 
         sendData(control_command_.Data(), control_command_.Size());
         break;
@@ -277,8 +231,9 @@ public:
 
         // Recover fan_speed and setpoint (when switching to fan_only they are
         // "lost")
-        control_command_.SetFanSpeedControl(climate_mode_fan_speed);
-        control_command_.SetTemperatureSetpointControl(climate_mode_setpoint);
+        control_command_.SetFanSpeedControl(status_.GetClimateModeFanSpeed());
+        control_command_.SetTemperatureSetpointControl(
+            status_.GetClimateModeSetpoint());
 
         sendData(control_command_.Data(), control_command_.Size());
         break;
@@ -357,4 +312,33 @@ public:
       this->publish_state();
     }
   }
+
+protected:
+  ClimateTraits traits() override {
+    auto traits = climate::ClimateTraits();
+    traits.set_supported_modes(
+        {climate::CLIMATE_MODE_OFF, climate::CLIMATE_MODE_HEAT_COOL,
+         climate::CLIMATE_MODE_HEAT, climate::CLIMATE_MODE_COOL,
+         climate::CLIMATE_MODE_DRY, climate::CLIMATE_MODE_FAN_ONLY});
+
+    traits.set_supported_fan_modes(
+        {climate::CLIMATE_FAN_ON, climate::CLIMATE_FAN_OFF,
+         climate::CLIMATE_FAN_AUTO, climate::CLIMATE_FAN_LOW,
+         climate::CLIMATE_FAN_MEDIUM, climate::CLIMATE_FAN_MIDDLE,
+         climate::CLIMATE_FAN_HIGH});
+
+    traits.set_visual_min_temperature(MIN_SET_TEMPERATURE);
+    traits.set_visual_max_temperature(MAX_SET_TEMPERATURE);
+    traits.set_visual_temperature_step(1.0f);
+    traits.set_supports_current_temperature(true);
+
+    traits.set_supported_swing_modes(
+        {climate::CLIMATE_SWING_OFF, climate::CLIMATE_SWING_BOTH,
+         climate::CLIMATE_SWING_VERTICAL, climate::CLIMATE_SWING_HORIZONTAL});
+    return traits;
+  }
+
+private:
+  ControlCommand control_command_;
+  Status status_;
 };

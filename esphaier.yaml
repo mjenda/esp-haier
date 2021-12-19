@@ -3,6 +3,7 @@ esphome:
   platform: ESP8266
   board: d1_mini
   includes:
+    - constants.h
     - Haier.h
 
 logger:

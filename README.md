@@ -1,31 +1,31 @@
- # ESP Haier
- 
+# ESP Haier
+ESP Haier is a project to use a **ESP8266** to control Wifi enabled Haier Air Conditioner with ESPHome and Home Assistant.
 
- ESP Haier is a project to use a ESP8266 (I did not test with ESP32) to control Haier Air Conditioner (firmware version R_1.0.00/e_2.5.14) with wifi module supoort with ESPHome and Home Assisant.
- 
+# Installation
+Create *secrets.yaml* in root directory and insert your network details there:
+```
+wifi-ssid: YOUR_SSID
+wifi-password: WIFI_PASSWORD
+ip-address: IP_ADDRESS_TO_YOUR_UNIT
+ip-gateway: GATEWAY
+ip-subnet: SUBNET
+```
+And then:
+```
+pip3 install esphome
+esphome run esphaier.yaml
+```
 
- You only need configure esphaier.yml, put Haier.h or Haierv2.h in the same directory and flash. 
- 
- Home Assisant will recognize as climate device.
+Home Assisant will recognize your unit as climate device.
 
- Added support on Haierv2.h for fan, dry and swing. For that ESPHome v1.15.0b1 or higher is needed. In home assistant->Supervisor->ESPHome Addon->Configurator add: esphome_version: v1.15.0b4 
- 
- This project is based in the works of Instalator and his project [Haier Wifi](https://github.com/instalator/Haier_WiFi/)
- 
- 
- I use a Wemos D1 Mini with a "hacked" USB cable. I cut the USB cable and connect directly to Wemos:
- 
- - Red -> 5V 
- - Black -> GND 
- - Green -> RX 
- - White -> TX
- 
-  # Known issues
- 
-- ~~The current temperature is not well reported. It always report 28ºC~~ -> Thanks to @instalator this issue is solved.
-- ~~Pending to be able to parse the mode correctly:~~
-     - ~~Cool mode is not correctly parsed.~~
-     - ~~Auto mode is not correctly parsed.~~
+As a controller I used Wemos D1 Mini with USB cable soldered directly to Wemos:
+- Red   -> 5V
+- Black -> GND
+- Green -> RX
+- White -> TX
 
-  # Pending work
-- ~~Create a custom switch in yaml file in order to select dry function~~
+# Tested devices
+> Haier Flexis White Matt, firmare R_1.0.00/e_2.5.14
+# Credits
+* [First author](https://github.com/MiguelAngelLV/esphaier)
+* [Second author](https://github.com/albetaCOM/esp-haier)

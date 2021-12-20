@@ -122,14 +122,11 @@ public:
       case FAN_AUTO:
         return CLIMATE_FAN_AUTO;
         break;
-      case FAN_MID:
-        return CLIMATE_FAN_MEDIUM;
-        break;
-        // case FAN_MIDDLE:
-        //    return CLIMATE_FAN_MIDDLE;
-        //    break;
       case FAN_LOW:
         return CLIMATE_FAN_LOW;
+        break;
+      case FAN_MID:
+        return CLIMATE_FAN_MEDIUM;
         break;
       case FAN_HIGH:
         return CLIMATE_FAN_HIGH;

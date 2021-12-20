@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include "esphome.h"
 
 #include "constants.h"
 #include "utility.h"
@@ -21,71 +22,28 @@ public:
 
   byte GetVerticalSwingStatus() const { return status_[VERTICAL_SWING_OFFSET]; }
 
-  bool GetQuietModeStatus() const {
-    bool ret = false;
-    byte tmp;
-    byte msk;
+  byte GetClimateModeFanSpeed() const { return climate_mode_fan_speed_; }
 
-    msk = (0x01 << QUIET_BIT);
-    tmp = status_[STATUS_DATA_OFFSET] & msk;
+  byte GetClimateModeSetpoint() const { return climate_mode_setpoint_; }
 
-    if (tmp != 0)
-      ret = true;
+  byte GetFanModeFanSpeed() const { return fan_mode_fan_speed_; }
 
-    return ret;
-  }
+  byte GetFanModeSetpoint() const { return fan_mode_setpoint_; }
 
-  bool GetPurifyStatus() const {
-    bool ret = false;
-    byte tmp;
-    byte msk;
+  bool GetPurifyStatus() const { return GetStatusDataField(PURIFY_BIT); }
 
-    msk = (0x01 << PURIFY_BIT);
-    tmp = status_[STATUS_DATA_OFFSET] & msk;
+  bool GetPowerStatus() const { return GetStatusDataField(POWER_BIT); }
 
-    if (tmp != 0)
-      ret = true;
-
-    return ret;
-  }
-
-  bool GetPowerStatus() const {
-    bool ret = false;
-    byte tmp;
-    byte msk;
-
-    msk = (0x01 << POWER_BIT);
-    tmp = status_[STATUS_DATA_OFFSET] & msk;
-
-    if (tmp != 0)
-      ret = true;
-
-    return ret;
-  }
+  bool GetQuietModeStatus() const { return GetStatusDataField(QUIET_BIT); }
 
   bool GetFastModeStatus() const {
-    bool ret = false;
-    byte tmp;
-    byte msk;
-
-    msk = (0x01 << AUTO_FAN_MAX_BIT);
-    tmp = status_[STATUS_DATA_OFFSET] & msk;
-
-    if (tmp != 0)
-      ret = true;
-
-    return ret;
-  }
-
-  float GetCurrentTemperature() const {
-    return status_[TEMPERATURE_OFFSET] / 2;
+    return GetStatusDataField(AUTO_FAN_MAX_BIT);
   }
 
   ClimateMode GetMode() const {
     if (!GetPowerStatus())
       return CLIMATE_MODE_OFF;
 
-    // Check current hvac mode
     switch (GetHvacModeStatus()) {
     case MODE_COOL:
       return CLIMATE_MODE_COOL;
@@ -109,39 +67,33 @@ public:
     if (!GetPowerStatus())
       return CLIMATE_FAN_OFF;
 
-    // If "quiet mode" is set we will read it as "fan low"
-    if (GetQuietModeStatus()) {
+    if (GetQuietModeStatus())
       return CLIMATE_FAN_LOW;
-    }
-    // If we detect that fast mode is on the we read it as "fan high"
-    else if (GetFastModeStatus()) {
+
+    if (GetFastModeStatus())
       return CLIMATE_FAN_HIGH;
-    } else {
-      // No quiet or fast so we read the actual fan speed.
-      switch (GetFanSpeedStatus()) {
-      case FAN_AUTO:
-        return CLIMATE_FAN_AUTO;
-        break;
-      case FAN_LOW:
-        return CLIMATE_FAN_LOW;
-        break;
-      case FAN_MID:
-        return CLIMATE_FAN_MEDIUM;
-        break;
-      case FAN_HIGH:
-        return CLIMATE_FAN_HIGH;
-        break;
-      default:
-        return CLIMATE_FAN_AUTO;
-      }
+
+    switch (GetFanSpeedStatus()) {
+    case FAN_AUTO:
+      return CLIMATE_FAN_AUTO;
+      break;
+    case FAN_LOW:
+      return CLIMATE_FAN_LOW;
+      break;
+    case FAN_MID:
+      return CLIMATE_FAN_MEDIUM;
+      break;
+    case FAN_HIGH:
+      return CLIMATE_FAN_HIGH;
+      break;
+    default:
+      return CLIMATE_FAN_AUTO;
     }
   }
 
   ClimateSwingMode GetSwingMode() const {
     if (!GetPowerStatus())
       return CLIMATE_SWING_OFF;
-    // Check the status of the swings (vertical and horizontal and translate
-    // according component configuration
     if ((GetHorizontalSwingStatus() == HORIZONTAL_SWING_AUTO) &&
         (GetVerticalSwingStatus() == VERTICAL_SWING_AUTO)) {
       return CLIMATE_SWING_BOTH;
@@ -154,62 +106,51 @@ public:
     }
   }
 
+  float GetCurrentTemperature() const {
+    return status_[TEMPERATURE_OFFSET] / 2;
+  }
   float GetTargetTemperature() const { return status_[SET_POINT_OFFSET] + 16; }
 
   bool GetFirstStatusReceived() const { return first_status_received_; }
 
-  byte GetClimateModeFanSpeed() const { return climate_mode_fan_speed_; }
-  byte GetClimateModeSetpoint() const { return climate_mode_setpoint_; }
-  byte GetFanModeFanSpeed() const { return fan_mode_fan_speed_; }
-  byte GetFanModeSetpoint() const { return fan_mode_setpoint_; }
-
-  void LogChangedBytes() {
-    PrintDebug();
-
-    int i;
-
-    if (!previous_status_init_) {
-      for (i = 0; i < sizeof(status_); i++) {
-        previous_status_[i] = status_[i];
-      }
-      previous_status_init_ = true;
-    }
-
-    for (i = 0; i < sizeof(status_); i++) {
-      if (status_[i] != previous_status_[i]) {
-        ESP_LOGD("EspHaier StatusController", "status_ byte %d: 0x%X --> 0x%X ",
-                 i, previous_status_[i], status_[i]);
-      }
-      previous_status_[i] = status_[i];
-    }
-  }
-
-  void Update(const std::array<byte, 47> &data) {
-    status_ = data;
-
-    if (GetHvacModeStatus() == MODE_FAN) {
-      fan_mode_fan_speed_ = GetFanSpeedStatus();
-      fan_mode_setpoint_ = GetTemperatureSetpointStatus();
-    } else {
-      climate_mode_fan_speed_ = GetFanSpeedStatus();
-      climate_mode_setpoint_ = GetTemperatureSetpointStatus();
-    }
-    first_status_received_ = true;
-  }
-
-  byte *Data() { return status_.data(); }
-  const byte *Data() const { return status_.data(); }
-  std::size_t Size() const { return status_.size(); }
-
   void LogStatus() {
-    auto raw = getHex(Data(), Size());
+    auto raw = getHex(status_.data(), status_.size());
     ESP_LOGD("EspHaier StatusController", "Readed message ALBA: %s ",
              raw.c_str());
     LogChangedBytes();
   }
 
+  bool OnPendingData() {
+    std::array<byte, 47> data = {{255, 255}};
+    if (Serial.available() == 0 || Serial.read() != 255 || Serial.read() != 255)
+      return false;
+
+    Serial.readBytes(data.data() + 2, data.size() - 2);
+
+    if (data[COMMAND_OFFSET] != RESPONSE_POLL) {
+      ESP_LOGD("EspHaier StatusController",
+               "Received message is not a status: 0x%X", data[COMMAND_OFFSET]);
+      return false;
+    }
+
+    UpdateStatus(data);
+
+    return ValidateChecksum() && ValidateTemperature();
+  }
+
+  void SendPoll() const {
+    Serial.write(poll_.data(), poll_.size());
+    const auto raw = getHex(poll_.data(), poll_.size());
+    ESP_LOGD("EspHaier StatusController", "POLL: %s ", raw.c_str());
+  }
+
+private:
+  bool GetStatusDataField(uint8_t bit) const {
+    return status_[STATUS_DATA_OFFSET] & (0x01 << bit);
+  }
+
   bool ValidateChecksum() const {
-    byte check = getChecksum(Data(), Size());
+    const byte check = getChecksum(status_.data(),  status_.size());
 
     if (check != status_[CRC_OFFSET(status_)]) {
       ESP_LOGW("EspHaier StatusController", "Invalid checksum (%d vs %d)",
@@ -233,29 +174,38 @@ public:
     return true;
   }
 
-  bool OnPendingData() {
-    std::array<byte, 47> data = {{255, 255}};
-    if (Serial.available() == 0 || Serial.read() != 255 || Serial.read() != 255)
-      return false;
+  void UpdateStatus(const std::array<byte, 47> &data) {
+    status_ = data;
 
-    Serial.readBytes(data.data() + 2, data.size() - 2);
-
-    // If is a status response
-    if (data[COMMAND_OFFSET] != RESPONSE_POLL) {
-      ESP_LOGD("EspHaier StatusController",
-               "Received message is not a status: 0x%X", data[COMMAND_OFFSET]);
-      return false;
+    if (GetHvacModeStatus() == MODE_FAN) {
+      fan_mode_fan_speed_ = GetFanSpeedStatus();
+      fan_mode_setpoint_ = GetTemperatureSetpointStatus();
+    } else {
+      climate_mode_fan_speed_ = GetFanSpeedStatus();
+      climate_mode_setpoint_ = GetTemperatureSetpointStatus();
     }
-
-    Update(data);
-
-    return ValidateChecksum() && ValidateTemperature();
+    first_status_received_ = true;
   }
 
-  void SendPoll() const {
-    Serial.write(poll_.data(), poll_.size());
-    const auto raw = getHex(poll_.data(), poll_.size());
-    ESP_LOGD("EspHaier StatusController", "POLL: %s ", raw.c_str());
+  void LogChangedBytes() {
+    PrintDebug();
+
+    int i;
+
+    if (!previous_status_init_) {
+      for (i = 0; i < sizeof(status_); i++) {
+        previous_status_[i] = status_[i];
+      }
+      previous_status_init_ = true;
+    }
+
+    for (i = 0; i < sizeof(status_); i++) {
+      if (status_[i] != previous_status_[i]) {
+        ESP_LOGD("EspHaier StatusController", "status_ byte %d: 0x%X --> 0x%X ",
+                 i, previous_status_[i], status_[i]);
+      }
+      previous_status_[i] = status_[i];
+    }
   }
 
   void PrintDebug() {
@@ -283,7 +233,6 @@ public:
              GetTemperatureSetpointStatus());
   }
 
-private:
   bool previous_status_init_ = false;
   byte climate_mode_fan_speed_ = FAN_AUTO;
   byte climate_mode_setpoint_ = 0x0A;

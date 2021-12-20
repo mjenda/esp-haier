@@ -3,12 +3,12 @@ esphome:
   platform: ESP8266
   board: d1_mini
   includes:
-    - constants.h
-    - utility.h
-    - status_controller.h
-    - initialization.h
-    - control_command.h
-    - Haier.h
+    - src/constants.h
+    - src/utility.h
+    - src/status_controller.h
+    - src/initialization.h
+    - src/control_command.h
+    - haier.h
 
 logger:
   level: DEBUG

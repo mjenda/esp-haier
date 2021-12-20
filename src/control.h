@@ -1,14 +1,16 @@
 #pragma once
 
-#include <array>
 #include "esphome.h"
+#include <array>
 
 #include "constants.h"
-#include "status_controller.h"
+#include "status.h"
+#include "utility.h"
 
-class ControlCommand {
+
+class Control {
 public:
-  ControlCommand(const StatusController &status, const ClimateCall &call)
+  Control(const Status &status, const ClimateCall &call)
       : status_(status), call_(call) {
     UpdateFromStatus();
     UpdateFromHomeAssitant();
@@ -209,7 +211,7 @@ private:
     }
   }
 
-  const StatusController &status_;
+  const Status &status_;
   const ClimateCall &call_;
 
   std::array<byte, 25> control_command_{

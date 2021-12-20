@@ -5,9 +5,9 @@ esphome:
   includes:
     - src/constants.h
     - src/utility.h
-    - src/status_controller.h
+    - src/status.h
     - src/initialization.h
-    - src/control_command.h
+    - src/control.h
     - haier.h
 
 logger:

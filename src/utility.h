@@ -2,6 +2,7 @@
 
 #include "esphome.h"
 
+
 byte getChecksum(const byte *message, size_t size) {
   byte position = CRC_OFFSET(message);
   byte crc = 0;

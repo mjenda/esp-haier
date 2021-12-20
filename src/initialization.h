@@ -1,7 +1,8 @@
 #pragma once
 
-#include <array>
 #include "esphome.h"
+#include <array>
+
 
 class Initialization {
 public:

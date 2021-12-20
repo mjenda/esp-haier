@@ -1,17 +1,11 @@
 #pragma once
 
 #include "esphome.h"
-#include <functional>
-#include <string>
 
-#include "constants.h"
-#include "control_command.h"
+#include "control.h"
 #include "initialization.h"
-#include "status_controller.h"
-#include "utility.h"
+#include "status.h"
 
-using namespace esphome;
-using namespace esphome::climate;
 
 class Haier : public Climate, public PollingComponent {
 public:
@@ -46,7 +40,7 @@ public:
       return;
     }
 
-    ControlCommand(status_, call).Send();
+    Control(status_, call).Send();
   }
 
 protected:
@@ -73,5 +67,5 @@ protected:
   }
 
 private:
-  StatusController status_;
+  Status status_;
 };

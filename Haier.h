@@ -15,7 +15,7 @@
 #include "constants.h"
 #include "control_command.h"
 #include "initialization.h"
-#include "status.h"
+#include "status_controller.h"
 #include "utility.h"
 
 using namespace esphome;
@@ -93,5 +93,5 @@ protected:
   }
 
 private:
-  Status status_;
+  StatusController status_;
 };

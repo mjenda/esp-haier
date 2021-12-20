@@ -3,11 +3,11 @@
 #include <array>
 
 #include "constants.h"
-#include "status.h"
+#include "status_controller.h"
 
 class ControlCommand {
 public:
-  void UpdateFromStatus(const Status &status) {
+  void UpdateFromStatus(const StatusController &status) {
     SetPowerControl(status.GetPowerStatus());
     SetHvacModeControl(status.GetHvacModeStatus());
     SetPurifyControl(status.GetPurifyStatus());
@@ -19,7 +19,8 @@ public:
     SetTemperatureSetpointControl(status.GetTemperatureSetpointStatus());
   }
 
-  void HandleClimateMode(optional<ClimateMode> mode, const Status &status) {
+  void HandleClimateMode(optional<ClimateMode> mode,
+                         const StatusController &status) {
     if (!mode)
       return;
 
@@ -149,9 +150,7 @@ public:
     SetPointOffset(*temp);
   }
 
-  void Send() {
-    sendData(control_command_.data(), control_command_.size());
-  }
+  void Send() { sendData(control_command_.data(), control_command_.size()); }
 
 private:
   void SetHvacModeControl(byte mode) {

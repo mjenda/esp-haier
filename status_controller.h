@@ -5,7 +5,7 @@
 #include "constants.h"
 #include "utility.h"
 
-class Status {
+class StatusController {
 public:
   byte GetHvacModeStatus() const { return status_[MODE_OFFSET] & MODE_MSK; }
 
@@ -177,8 +177,8 @@ public:
 
     for (i = 0; i < sizeof(status_); i++) {
       if (status_[i] != previous_status_[i]) {
-        ESP_LOGD("EspHaier Status", "status_ byte %d: 0x%X --> 0x%X ", i,
-                 previous_status_[i], status_[i]);
+        ESP_LOGD("EspHaier StatusController", "status_ byte %d: 0x%X --> 0x%X ",
+                 i, previous_status_[i], status_[i]);
       }
       previous_status_[i] = status_[i];
     }
@@ -203,7 +203,8 @@ public:
 
   void LogStatus() {
     auto raw = getHex(Data(), Size());
-    ESP_LOGD("EspHaier Status", "Readed message ALBA: %s ", raw.c_str());
+    ESP_LOGD("EspHaier StatusController", "Readed message ALBA: %s ",
+             raw.c_str());
     LogChangedBytes();
   }
 
@@ -211,8 +212,8 @@ public:
     byte check = getChecksum(Data(), Size());
 
     if (check != status_[CRC_OFFSET(status_)]) {
-      ESP_LOGW("EspHaier Status", "Invalid checksum (%d vs %d)", check,
-               status_[CRC_OFFSET(status_)]);
+      ESP_LOGW("EspHaier StatusController", "Invalid checksum (%d vs %d)",
+               check, status_[CRC_OFFSET(status_)]);
       return false;
     }
     return true;
@@ -226,7 +227,7 @@ public:
         current_temperature > MAX_VALID_INTERNAL_TEMP ||
         target_temperature < MIN_SET_TEMPERATURE ||
         target_temperature > MAX_SET_TEMPERATURE) {
-      ESP_LOGW("EspHaier Status", "Invalid temperatures");
+      ESP_LOGW("EspHaier StatusController", "Invalid temperatures");
       return false;
     }
     return true;
@@ -241,8 +242,8 @@ public:
 
     // If is a status response
     if (data[COMMAND_OFFSET] != RESPONSE_POLL) {
-      ESP_LOGD("EspHaier Status", "Received message is not a status: 0x%X",
-               data[COMMAND_OFFSET]);
+      ESP_LOGD("EspHaier StatusController",
+               "Received message is not a status: 0x%X", data[COMMAND_OFFSET]);
       return false;
     }
 
@@ -254,24 +255,31 @@ public:
   void SendPoll() const {
     Serial.write(poll_.data(), poll_.size());
     const auto raw = getHex(poll_.data(), poll_.size());
-    ESP_LOGD("EspHaier Status", "POLL: %s ", raw.c_str());
+    ESP_LOGD("EspHaier StatusController", "POLL: %s ", raw.c_str());
   }
 
   void PrintDebug() {
     if (true)
       return;
-    ESP_LOGW("EspHaier Status", "Power Status = 0x%X", GetPowerStatus());
-    ESP_LOGW("EspHaier Status", "HVAC return 0x%X", GetHvacModeStatus());
-    ESP_LOGW("EspHaier Status", "Purify status = 0x%X", GetPurifyStatus());
-    ESP_LOGW("EspHaier Status", "Quiet mode Status = 0x%X",
+    ESP_LOGW("EspHaier StatusController", "Power StatusController = 0x%X",
+             GetPowerStatus());
+    ESP_LOGW("EspHaier StatusController", "HVAC return 0x%X",
+             GetHvacModeStatus());
+    ESP_LOGW("EspHaier StatusController", "Purify status = 0x%X",
+             GetPurifyStatus());
+    ESP_LOGW("EspHaier StatusController", "Quiet mode StatusController = 0x%X",
              GetQuietModeStatus());
-    ESP_LOGW("EspHaier Status", "Fast mode Status = 0x%X", GetFastModeStatus());
-    ESP_LOGW("EspHaier Status", "Fan speed Status = 0x%X", GetFanSpeedStatus());
-    ESP_LOGW("EspHaier Status", "Horizontal Swing Status = 0x%X",
+    ESP_LOGW("EspHaier StatusController", "Fast mode StatusController = 0x%X",
+             GetFastModeStatus());
+    ESP_LOGW("EspHaier StatusController", "Fan speed StatusController = 0x%X",
+             GetFanSpeedStatus());
+    ESP_LOGW("EspHaier StatusController",
+             "Horizontal Swing StatusController = 0x%X",
              GetHorizontalSwingStatus());
-    ESP_LOGW("EspHaier Status", "Vertical Swing Status = 0x%X",
+    ESP_LOGW("EspHaier StatusController",
+             "Vertical Swing StatusController = 0x%X",
              GetVerticalSwingStatus());
-    ESP_LOGW("EspHaier Status", "Set Point Status = 0x%X",
+    ESP_LOGW("EspHaier StatusController", "Set Point StatusController = 0x%X",
              GetTemperatureSetpointStatus());
   }
 

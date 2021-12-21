@@ -6,7 +6,6 @@
 #include "constants.h"
 #include "utility.h"
 
-
 class Status {
 public:
   byte GetHvacModeStatus() const { return status_[MODE_OFFSET] & MODE_MSK; }
@@ -48,16 +47,12 @@ public:
     switch (GetHvacModeStatus()) {
     case MODE_COOL:
       return CLIMATE_MODE_COOL;
-      break;
     case MODE_HEAT:
       return CLIMATE_MODE_HEAT;
-      break;
     case MODE_DRY:
       return CLIMATE_MODE_DRY;
-      break;
     case MODE_FAN:
       return CLIMATE_MODE_FAN_ONLY;
-      break;
     case MODE_AUTO:
     default:
       return CLIMATE_MODE_HEAT_COOL;
@@ -77,16 +72,12 @@ public:
     switch (GetFanSpeedStatus()) {
     case FAN_AUTO:
       return CLIMATE_FAN_AUTO;
-      break;
     case FAN_LOW:
       return CLIMATE_FAN_LOW;
-      break;
     case FAN_MID:
       return CLIMATE_FAN_MEDIUM;
-      break;
     case FAN_HIGH:
       return CLIMATE_FAN_HIGH;
-      break;
     default:
       return CLIMATE_FAN_AUTO;
     }
@@ -190,22 +181,14 @@ private:
   void LogChangedBytes() {
     PrintDebug();
 
-    int i;
-
-    if (!previous_status_init_) {
-      for (i = 0; i < sizeof(status_); i++) {
-        previous_status_[i] = status_[i];
-      }
-      previous_status_init_ = true;
-    }
-
-    for (i = 0; i < sizeof(status_); i++) {
+    for (int i = 0; i < sizeof(status_); i++) {
       if (status_[i] != previous_status_[i]) {
         ESP_LOGD("EspHaier Status", "status_ byte %d: 0x%X --> 0x%X ", i,
                  previous_status_[i], status_[i]);
       }
-      previous_status_[i] = status_[i];
     }
+
+    previous_status_ = status_;
   }
 
   void PrintDebug() {
@@ -226,7 +209,6 @@ private:
              GetTemperatureSetpointStatus());
   }
 
-  bool previous_status_init_ = false;
   byte climate_mode_fan_speed_ = FAN_AUTO;
   byte climate_mode_setpoint_ = 0x0A;
   byte fan_mode_fan_speed_ = FAN_HIGH;
@@ -235,6 +217,5 @@ private:
 
   std::array<byte, 47> status_{{}};
   std::array<byte, 47> previous_status_{{}};
-  std::array<byte, 15> poll_{{0xFF, 0xFF, 0x0A, 0x40, 0x00, 0x00, 0x00, 0x00,
-                              0x00, 0x01, 0x4D, 0x01, 0x99, 0xB3, 0xB4}};
+  std::array<byte, 15> poll_{POLL_MESSAGE};
 };

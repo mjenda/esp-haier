@@ -106,6 +106,8 @@ constexpr auto GetControlMessage = []() {
                                0x00, 0x00, 0x00, 0x00});
 };
 
+constexpr uint32_t kPollingIntervalInMilisec = 5000;
+
 constexpr auto GetStatusMessage = []() { return std::array<byte, 47>(); };
 
 constexpr auto GetInitialization1 = []() {

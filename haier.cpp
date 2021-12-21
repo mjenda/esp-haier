@@ -3,6 +3,7 @@
 #include "esphome.h"
 
 #include "control.h"
+#include "constants.h"
 #include "initialization.h"
 
 using esphome::esp_log_printf_;
@@ -12,7 +13,7 @@ using esphome::climate::ClimateFanMode;
 using esphome::climate::ClimateSwingMode;
 using esphome::climate::ClimateTraits;
 
-Haier::Haier() : PollingComponent(5000 /*5 sec*/) {}
+Haier::Haier() : PollingComponent(kPollingIntervalInMilisec) {}
 
 void Haier::setup() {
   Serial.begin(9600);

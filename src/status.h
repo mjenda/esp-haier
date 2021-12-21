@@ -34,7 +34,7 @@ public:
   void SendPoll() const;
 
 private:
-  bool GetStatusDataField(uint8_t bit) const;
+  bool GetStatusDataField(byte bit) const;
   bool ValidateChecksum() const;
   bool ValidateTemperature() const;
   void UpdateStatus(const StatusMessageType &data);

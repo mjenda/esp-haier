@@ -199,7 +199,7 @@ void Control::SetPointOffset(float temp) {
   control_command_[Offset::OffsetSetTemperature] = (uint16)temp - 16;
 }
 
-void Control::ApplyStatusDataField(bool state, uint8_t field) {
+void Control::ApplyStatusDataField(bool state, byte field) {
   byte msk = (0x01 << field);
 
   if (state) {

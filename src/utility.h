@@ -2,7 +2,7 @@
 
 #include "esphome.h"
 
-template <typename Message> uint8_t crc_offset(const Message &message) {
+template <typename Message> byte crc_offset(const Message &message) {
   return message[2] + 2u;
 }
 

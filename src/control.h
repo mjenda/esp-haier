@@ -30,7 +30,7 @@ private:
   void SetPowerControl(bool power_mode);
   void SetFastModeControl(bool fast_mode);
   void SetPointOffset(float temp);
-  void ApplyStatusDataField(bool state, uint8_t field);
+  void ApplyStatusDataField(bool state, byte field);
 
   const Status &status_;
   const esphome::climate::ClimateCall &call_;

@@ -152,7 +152,7 @@ void Status::SendPoll() const {
   ESP_LOGD("EspHaier Status", "POLL: %s ", getHex(poll_).c_str());
 }
 
-bool Status::GetStatusDataField(uint8_t bit) const {
+bool Status::GetStatusDataField(byte bit) const {
   return status_[Offset::OffsetStatusData] & (0x01 << bit);
 }
 

@@ -5,10 +5,15 @@ esphome:
   includes:
     - src/constants.h
     - src/utility.h
+    - src/utility.cpp
     - src/status.h
+    - src/status.cpp
     - src/initialization.h
+    - src/initialization.cpp
     - src/control.h
+    - src/control.cpp
     - haier.h
+    - haier.cpp
 
 logger:
   level: DEBUG

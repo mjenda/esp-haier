@@ -2,6 +2,8 @@
 
 #include <array>
 
+#include "esphome.h"
+
 enum Offset {
   OffsetCommand = 9,
   OffsetSetTemperature = 12,

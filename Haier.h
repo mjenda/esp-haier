@@ -46,13 +46,13 @@ protected:
   ClimateTraits traits() override {
     auto traits = climate::ClimateTraits();
     traits.set_supported_modes(
-        {climate::CLIMATE_MODE_OFF, climate::CLIMATE_MODE_HEAT_COOL,
-         climate::CLIMATE_MODE_HEAT, climate::CLIMATE_MODE_COOL,
-         climate::CLIMATE_MODE_DRY, climate::CLIMATE_MODE_FAN_ONLY});
+        {ClimateMode::CLIMATE_MODE_OFF, ClimateMode::CLIMATE_MODE_HEAT_COOL,
+         ClimateMode::CLIMATE_MODE_HEAT, ClimateMode::CLIMATE_MODE_COOL,
+         ClimateMode::CLIMATE_MODE_DRY, ClimateMode::CLIMATE_MODE_FAN_ONLY});
 
     traits.set_supported_fan_modes(
-        {climate::CLIMATE_FAN_AUTO, climate::CLIMATE_FAN_LOW,
-         climate::CLIMATE_FAN_MEDIUM, climate::CLIMATE_FAN_HIGH});
+        {ClimateFanMode::CLIMATE_FAN_AUTO, ClimateFanMode::CLIMATE_FAN_LOW,
+         ClimateFanMode::CLIMATE_FAN_MEDIUM, ClimateFanMode::CLIMATE_FAN_HIGH});
 
     traits.set_visual_min_temperature(TempConstraints::MinSetTemperature);
     traits.set_visual_max_temperature(TempConstraints::MaxSetTemperature);
@@ -60,8 +60,10 @@ protected:
     traits.set_supports_current_temperature(true);
 
     traits.set_supported_swing_modes(
-        {climate::CLIMATE_SWING_OFF, climate::CLIMATE_SWING_BOTH,
-         climate::CLIMATE_SWING_VERTICAL, climate::CLIMATE_SWING_HORIZONTAL});
+        {ClimateSwingMode::CLIMATE_SWING_OFF,
+         ClimateSwingMode::CLIMATE_SWING_BOTH,
+         ClimateSwingMode::CLIMATE_SWING_VERTICAL,
+         ClimateSwingMode::CLIMATE_SWING_HORIZONTAL});
     return traits;
   }
 

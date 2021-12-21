@@ -54,62 +54,62 @@ public:
 
   ClimateMode GetMode() const {
     if (!GetPowerStatus())
-      return CLIMATE_MODE_OFF;
+      return ClimateMode::CLIMATE_MODE_OFF;
 
     switch (GetHvacModeStatus()) {
     case AcMode::ModeCool:
-      return CLIMATE_MODE_COOL;
+      return ClimateMode::CLIMATE_MODE_COOL;
     case AcMode::ModeHeat:
-      return CLIMATE_MODE_HEAT;
+      return ClimateMode::CLIMATE_MODE_HEAT;
     case AcMode::ModeDry:
-      return CLIMATE_MODE_DRY;
+      return ClimateMode::CLIMATE_MODE_DRY;
     case AcMode::ModeFan:
-      return CLIMATE_MODE_FAN_ONLY;
+      return ClimateMode::CLIMATE_MODE_FAN_ONLY;
     case AcMode::ModeAuto:
     default:
-      return CLIMATE_MODE_HEAT_COOL;
+      return ClimateMode::CLIMATE_MODE_HEAT_COOL;
     }
   }
 
   ClimateFanMode GetFanMode() const {
     if (!GetPowerStatus())
-      return CLIMATE_FAN_OFF;
+      return ClimateFanMode::CLIMATE_FAN_OFF;
 
     if (GetQuietModeStatus())
-      return CLIMATE_FAN_LOW;
+      return ClimateFanMode::CLIMATE_FAN_LOW;
 
     if (GetFastModeStatus())
-      return CLIMATE_FAN_HIGH;
+      return ClimateFanMode::CLIMATE_FAN_HIGH;
 
     switch (GetFanSpeedStatus()) {
     case FanMode::FanAuto:
-      return CLIMATE_FAN_AUTO;
+      return ClimateFanMode::CLIMATE_FAN_AUTO;
     case FanMode::FanLow:
-      return CLIMATE_FAN_LOW;
+      return ClimateFanMode::CLIMATE_FAN_LOW;
     case FanMode::FanMid:
-      return CLIMATE_FAN_MEDIUM;
+      return ClimateFanMode::CLIMATE_FAN_MEDIUM;
     case FanMode::FanHigh:
-      return CLIMATE_FAN_HIGH;
+      return ClimateFanMode::CLIMATE_FAN_HIGH;
     default:
-      return CLIMATE_FAN_AUTO;
+      return ClimateFanMode::CLIMATE_FAN_AUTO;
     }
   }
 
   ClimateSwingMode GetSwingMode() const {
     if (!GetPowerStatus())
-      return CLIMATE_SWING_OFF;
+      return ClimateSwingMode::CLIMATE_SWING_OFF;
     if ((GetHorizontalSwingStatus() ==
          HorizontalSwingMode::HorizontalSwingAuto) &&
         (GetVerticalSwingStatus() == VerticalSwingMode::VerticalSwingAuto)) {
-      return CLIMATE_SWING_BOTH;
+      return ClimateSwingMode::CLIMATE_SWING_BOTH;
     } else if (GetHorizontalSwingStatus() ==
                HorizontalSwingMode::HorizontalSwingAuto) {
-      return CLIMATE_SWING_HORIZONTAL;
+      return ClimateSwingMode::CLIMATE_SWING_HORIZONTAL;
     } else if (GetVerticalSwingStatus() ==
                VerticalSwingMode::VerticalSwingAuto) {
-      return CLIMATE_SWING_VERTICAL;
+      return ClimateSwingMode::CLIMATE_SWING_VERTICAL;
     } else {
-      return CLIMATE_SWING_OFF;
+      return ClimateSwingMode::CLIMATE_SWING_OFF;
     }
   }
 

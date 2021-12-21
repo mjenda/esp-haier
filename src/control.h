@@ -45,39 +45,39 @@ private:
     ESP_LOGD("EspHaier Control", "mode = %d", *mode);
 
     switch (*mode) {
-    case CLIMATE_MODE_OFF:
+    case ClimateMode::CLIMATE_MODE_OFF:
       SetPowerControl(!status_.GetPowerStatus());
       break;
 
-    case CLIMATE_MODE_HEAT_COOL:
+    case ClimateMode::CLIMATE_MODE_HEAT_COOL:
       SetPowerControl(true);
       SetHvacModeControl(AcMode::ModeAuto);
       SetFanSpeedControl(status_.GetClimateModeFanSpeed());
       SetTemperatureSetpointControl(status_.GetClimateModeSetpoint());
       break;
 
-    case CLIMATE_MODE_HEAT:
+    case ClimateMode::CLIMATE_MODE_HEAT:
       SetPowerControl(true);
       SetHvacModeControl(AcMode::ModeHeat);
       SetFanSpeedControl(status_.GetClimateModeFanSpeed());
       SetTemperatureSetpointControl(status_.GetClimateModeSetpoint());
       break;
 
-    case CLIMATE_MODE_DRY:
+    case ClimateMode::CLIMATE_MODE_DRY:
       SetPowerControl(true);
       SetHvacModeControl(AcMode::ModeDry);
       SetFanSpeedControl(status_.GetClimateModeFanSpeed());
       SetTemperatureSetpointControl(status_.GetClimateModeSetpoint());
       break;
 
-    case CLIMATE_MODE_FAN_ONLY:
+    case ClimateMode::CLIMATE_MODE_FAN_ONLY:
       SetPowerControl(true);
       SetHvacModeControl(AcMode::ModeFan);
       SetFanSpeedControl(status_.GetFanModeFanSpeed());
       SetTemperatureSetpointControl(status_.GetFanModeSetpoint());
       break;
 
-    case CLIMATE_MODE_COOL:
+    case ClimateMode::CLIMATE_MODE_COOL:
       SetPowerControl(true);
       SetHvacModeControl(AcMode::ModeCool);
       SetFanSpeedControl(status_.GetClimateModeFanSpeed());
@@ -99,16 +99,16 @@ private:
     ESP_LOGD("EspHaier Control", "fan_mode = %d", *fan_mode);
 
     switch (*fan_mode) {
-    case CLIMATE_FAN_AUTO:
+    case ClimateFanMode::CLIMATE_FAN_AUTO:
       SetFanSpeedControl(FanMode::FanAuto);
       break;
-    case CLIMATE_FAN_LOW:
+    case ClimateFanMode::CLIMATE_FAN_LOW:
       SetFanSpeedControl(FanMode::FanLow);
       break;
-    case CLIMATE_FAN_MEDIUM:
+    case ClimateFanMode::CLIMATE_FAN_MEDIUM:
       SetFanSpeedControl(FanMode::FanMid);
       break;
-    case CLIMATE_FAN_HIGH:
+    case ClimateFanMode::CLIMATE_FAN_HIGH:
       SetFanSpeedControl(FanMode::FanHigh);
       break;
     default:
@@ -126,19 +126,19 @@ private:
     ESP_LOGD("EspHaier Control", "swing_mode = %d", *swing_mode);
 
     switch (*swing_mode) {
-    case CLIMATE_SWING_OFF:
+    case ClimateSwingMode::CLIMATE_SWING_OFF:
       SetHorizontalSwingControl(HorizontalSwingMode::HorizontalSwingCenter);
       SetVerticalSwingControl(VerticalSwingMode::VerticalSwingCenter);
       break;
-    case CLIMATE_SWING_VERTICAL:
+    case ClimateSwingMode::CLIMATE_SWING_VERTICAL:
       SetHorizontalSwingControl(HorizontalSwingMode::HorizontalSwingCenter);
       SetVerticalSwingControl(VerticalSwingMode::VerticalSwingAuto);
       break;
-    case CLIMATE_SWING_HORIZONTAL:
+    case ClimateSwingMode::CLIMATE_SWING_HORIZONTAL:
       SetHorizontalSwingControl(HorizontalSwingMode::HorizontalSwingAuto);
       SetVerticalSwingControl(VerticalSwingMode::VerticalSwingCenter);
       break;
-    case CLIMATE_SWING_BOTH:
+    case ClimateSwingMode::CLIMATE_SWING_BOTH:
       SetHorizontalSwingControl(HorizontalSwingMode::HorizontalSwingAuto);
       SetVerticalSwingControl(VerticalSwingMode::VerticalSwingAuto);
       break;

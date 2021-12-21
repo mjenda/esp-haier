@@ -6,7 +6,6 @@
 #include "initialization.h"
 #include "status.h"
 
-
 class Haier : public Climate, public PollingComponent {
 public:
   Haier() : PollingComponent(5000 /*5 sec*/) {}
@@ -55,8 +54,8 @@ protected:
         {climate::CLIMATE_FAN_AUTO, climate::CLIMATE_FAN_LOW,
          climate::CLIMATE_FAN_MEDIUM, climate::CLIMATE_FAN_HIGH});
 
-    traits.set_visual_min_temperature(MIN_SET_TEMPERATURE);
-    traits.set_visual_max_temperature(MAX_SET_TEMPERATURE);
+    traits.set_visual_min_temperature(TempConstraints::MinSetTemperature);
+    traits.set_visual_max_temperature(TempConstraints::MaxSetTemperature);
     traits.set_visual_temperature_step(1.0f);
     traits.set_supports_current_temperature(true);
 

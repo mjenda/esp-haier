@@ -1,7 +1,6 @@
 #pragma once
 
 #include "esphome.h"
-#include <array>
 
 class Initialization {
 public:
@@ -11,13 +10,13 @@ public:
   }
 
 private:
-  void Send(const std::array<byte, 13> &initialization) {
+  void Send(const InitializationType &initialization) {
     delay(1000);
     Serial.write(initialization.data(), initialization.size());
-    auto raw = getHex(initialization.data(), initialization.size());
+    auto raw = getHex(initialization);
     ESP_LOGD("EspHaier Initialization", "initialization: %s ", raw.c_str());
   }
 
-  std::array<byte, 13> initialization_1{INITIALIZATION_1};
-  std::array<byte, 13> initialization_2{INITIALIZATION_2};
+  InitializationType initialization_1 = GetInitialization1();
+  InitializationType initialization_2 = GetInitialization2();
 };

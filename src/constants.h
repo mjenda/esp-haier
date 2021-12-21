@@ -1,83 +1,122 @@
 #pragma once
 
-// Updated read offset
+#include <array>
 
-#define MODE_OFFSET 14
-#define MODE_MSK 0xF0
-#define MODE_AUTO 0x00
-#define MODE_DRY 0x40
-#define MODE_COOL 0x20
-#define MODE_HEAT 0x80
-#define MODE_FAN 0xC0
-#define FAN_MSK 0x0F
-#define FAN_LOW 0x03
-#define FAN_MID 0x02
-#define FAN_HIGH 0x01
-#define FAN_AUTO 0x05
+enum Offset {
+  OffsetCommand = 9,
+  OffsetSetTemperature = 12,
+  OffsetVerticalSwing = 13,
+  OffsetMode = 14,
+  OffsetStatusData = 17,
+  OffsetHorizontalSwing = 19,
+  OffsetCurrentTemperature = 22,
+  OffsetSwing = 27,
+  OffsetLock = 28,
+  OffsetFresh = 31,
+};
 
-#define HORIZONTAL_SWING_OFFSET 19
-#define HORIZONTAL_SWING_CENTER 0x00
-#define HORIZONTAL_SWING_MAX_LEFT 0x03
-#define HORIZONTAL_SWING_LEFT 0x04
-#define HORIZONTAL_SWING_MAX_RIGHT 0x06
-#define HORIZONTAL_SWING_RIGHT 0x05
-#define HORIZONTAL_SWING_AUTO 0x07
+enum AcMode {
+  ModeMask = 0xF0,
+  ModeAuto = 0x00,
+  ModeDry = 0x40,
+  ModeCool = 0x20,
+  ModeHeat = 0x80,
+  ModeFan = 0xC0,
+};
 
-#define VERTICAL_SWING_OFFSET 13
-#define VERTICAL_SWING_MAX_UP 0x02
-#define VERTICAL_SWING_UP 0x04
-#define VERTICAL_SWING_CENTER 0x06
-#define VERTICAL_SWING_DOWN 0x08
-#define VERTICAL_SWING_HEALTH_UP 0x01
-#define VERTICAL_SWING_HEALTH_DOWN 0x03
-#define VERTICAL_SWING_AUTO 0x0C
+enum FanMode {
+  FanMask = 0x0F,
+  FanLow = 0x03,
+  FanMid = 0x02,
+  FanHigh = 0x01,
+  FanAuto = 0x05,
+};
 
-#define TEMPERATURE_OFFSET 22
+enum HorizontalSwingMode {
+  HorizontalSwingCenter = 0x00,
+  HorizontalSwingMaxLeft = 0x03,
+  HorizontalSwingLeft = 0x04,
+  HorizontalSwingMaxRight = 0x06,
+  HorizontalSwingRight = 0x05,
+  HorizontalSwingAuto = 0x07,
+};
 
-#define STATUS_DATA_OFFSET 17 // Purify/Quiet mode/OnOff/...
-#define POWER_BIT (0)
-#define PURIFY_BIT (1)
-#define QUIET_BIT (3)
-#define AUTO_FAN_MAX_BIT (4)
+enum VerticalSwingMode {
+  VerticalSwingMaxUp = 0x02,
+  VerticalSwingUp = 0x04,
+  VerticalSwingCenter = 0x06,
+  VerticalSwingDown = 0x08,
+  VerticalSwingHealthUp = 0x01,
+  VerticalSwingHealthDown = 0x03,
+  VerticalSwingAuto = 0x0C,
+};
 
-#define SET_POINT_OFFSET 12
+enum DataField {
+  DataFieldPower = 0,
+  DataFieldPurify = 0x01,
+  DataFieldQuiet = 0x03,
+  DataFieldFanMax = 0x04,
+};
 
-// Another byte
-#define SWING 27
-#define SWING_OFF 0
-#define SWING_VERTICAL 1
-#define SWING_HORIZONTAL 2
-#define SWING_BOTH
+enum SwingMode {
+  SwingOff = 0x00,
+  SwingVertical = 0x01,
+  SwingHorizontal = 0x02,
+  SwingBoth = 0x03,
+};
 
-#define LOCK 28
-#define LOCK_ON 80
-#define LOCK_OFF 00
+enum LockState {
+  LockStateOn = 0x50,
+  LockStateOff = 0x00,
+};
 
-// Updated read offset
+enum FreshState {
+  FreshkStateOn = 0x01,
+  FreshStateOff = 0x00,
+};
 
-#define FRESH 31
-#define FRESH_ON 1
-#define FRESH_OFF 0
+enum CommandType {
+  CommandResponsePoll = 0x02,
+};
 
-// Updated read offset
+enum PowerControl {
+  PowerControllOffset = 13,
+  PowerControlOn = 0x01,
+  PwoerControlOff = 0x00,
+};
 
-#define COMMAND_OFFSET 9
-#define RESPONSE_POLL 2
+enum TempConstraints {
+  MinSetTemperature = 16,
+  MaxSetTemperature = 30,
+  MinValidInternalTemp = 10,
+  MaxValidInternalTemp = 50,
+};
 
-#define CRC_OFFSET(message) (2 + message[2])
+constexpr auto GetPollMessage = []() {
+  return std::array<byte, 15>({0xFF, 0xFF, 0x0A, 0x40, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x01, 0x4D, 0x01, 0x99, 0xB3, 0xB4});
+};
 
-// Control commands
-#define CTR_POWER_OFFSET 13
-#define CTR_POWER_ON 0x01
-#define CTR_POWER_OFF 0x00
+constexpr auto GetControlMessage = []() {
+  return std::array<byte, 25>({0xFF, 0xFF, 0x14, 0x40, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x01, 0x60, 0x01, 0x09, 0x08,
+                               0x25, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x00, 0x00});
+};
 
-#define POLY 0xa001
+constexpr auto GetStatusMessage = []() { return std::array<byte, 47>(); };
 
-// temperatures supported by AC system
-#define MIN_SET_TEMPERATURE 16
-#define MAX_SET_TEMPERATURE 30
+constexpr auto GetInitialization1 = []() {
+  return std::array<byte, 13>({0xFF, 0xFF, 0x0A, 0x0, 0x0, 0x0, 0x0, 0x0, 0x00,
+                               0x61, 0x00, 0x07, 0x72});
+};
 
-// if internal temperature is outside of those boundaries, message will be
-// discarded
-#define MIN_VALID_INTERNAL_TEMP 10
-#define MAX_VALID_INTERNAL_TEMP 50
+constexpr auto GetInitialization2 = []() {
+  return std::array<byte, 13>({0xFF, 0xFF, 0x08, 0x40, 0x0, 0x0, 0x0, 0x0, 0x0,
+                               0x70, 0xB8, 0x86, 0x41});
+};
+
+using PollMessageType = decltype(GetPollMessage());
+using ControlMessagType = decltype(GetControlMessage());
+using StatusMessageType = decltype(GetStatusMessage());
+using InitializationType = decltype(GetInitialization1());

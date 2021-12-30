@@ -377,7 +377,7 @@ protected:
         auto traits = climate::ClimateTraits();
 		traits.set_supported_modes({climate::CLIMATE_MODE_OFF, climate::CLIMATE_MODE_HEAT_COOL, climate::CLIMATE_MODE_HEAT, climate::CLIMATE_MODE_COOL, climate::CLIMATE_MODE_DRY, climate::CLIMATE_MODE_FAN_ONLY});
 
-		traits.set_supported_fan_modes({climate::CLIMATE_FAN_ON, climate::CLIMATE_FAN_OFF, climate::CLIMATE_FAN_AUTO, climate::CLIMATE_FAN_LOW, climate::CLIMATE_FAN_MEDIUM, climate::CLIMATE_FAN_MIDDLE, climate::CLIMATE_FAN_HIGH});
+		traits.set_supported_fan_modes({climate::CLIMATE_FAN_AUTO, climate::CLIMATE_FAN_LOW, climate::CLIMATE_FAN_MEDIUM, climate::CLIMATE_FAN_HIGH});
 
         traits.set_visual_min_temperature(MIN_SET_TEMPERATURE);
         traits.set_visual_max_temperature(MAX_SET_TEMPERATURE);
@@ -495,9 +495,6 @@ public:
                     case FAN_MID:
                         fan_mode = CLIMATE_FAN_MEDIUM;
                         break;
-                    //case FAN_MIDDLE:
-                    //    fan_mode = CLIMATE_FAN_MIDDLE;
-                    //    break;
 					case FAN_LOW:
 						fan_mode = CLIMATE_FAN_LOW;
                         break;
@@ -635,9 +632,6 @@ public:
                 case CLIMATE_FAN_LOW:
 					SetFanSpeedControl(FAN_LOW);
                     break;
-                case CLIMATE_FAN_MIDDLE:
-					SetFanSpeedControl(FAN_MID);
-                    break;
                 case CLIMATE_FAN_MEDIUM:
 					SetFanSpeedControl(FAN_MID);
                     break;
@@ -647,10 +641,6 @@ public:
                 case CLIMATE_FAN_AUTO:
                     SetFanSpeedControl(FAN_AUTO);
                     break;
-				case CLIMATE_FAN_ON:
-				case CLIMATE_FAN_OFF:
-				case CLIMATE_FAN_FOCUS:
-				case CLIMATE_FAN_DIFFUSE:
 				default:
 				    break;
                     

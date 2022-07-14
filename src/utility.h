@@ -36,6 +36,18 @@ template <typename Message> String getHex(const Message &message) {
   return raw;
 }
 
+// For some reason in captured data when crc16 is computed to FF 29 there is
+// a 55 in the middle -> FF 55 29. As a "temporary" workaround just
+// hardcore this case. This is ugly hack, but I don't have any idea what is this number.
+template <typename Message> bool hackCrc16(Message &message, byte crc16Offset) {
+  if (message[crc16Offset + 1] == 0xff && message[crc16Offset + 2] == 0x29) {
+    message[crc16Offset + 3] = message[crc16Offset + 2];
+    message[crc16Offset + 2] = 0x55;
+    return true;
+  }
+  return false;
+}
+
 template <typename Message> void sendData(Message &message) {
   byte offset = crc_offset(message);
   byte crc = getChecksum(message);
@@ -46,9 +58,14 @@ template <typename Message> void sendData(Message &message) {
   message[offset + 1] = (crc_16 >> 8) & 0xFF;
   message[offset + 2] = crc_16 & 0xFF;
 
+  String hackInformation = "";
+  if (hackCrc16(message, offset)) {
+    hackInformation = ", but crc16 has been hacked to FF5529";
+  }
+
   Serial.write(message.data(), message.size());
 
   auto raw = getHex(message);
-  ESP_LOGD("EspHaier Utility", "Message sent: %s  - CRC: %X - CRC16: %X",
-           raw.c_str(), crc, crc_16);
+  ESP_LOGD("EspHaier Utility", "Message sent: %s  - CRC: %X - CRC16: %X%s",
+           raw.c_str(), crc, crc_16, hackInformation.c_str());
 }

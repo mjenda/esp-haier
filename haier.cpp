@@ -52,7 +52,7 @@ ClimateTraits Haier::traits() {
   traits.set_supported_modes(
       {ClimateMode::CLIMATE_MODE_OFF, ClimateMode::CLIMATE_MODE_HEAT_COOL,
        ClimateMode::CLIMATE_MODE_HEAT, ClimateMode::CLIMATE_MODE_COOL,
-       ClimateMode::CLIMATE_MODE_DRY, ClimateMode::CLIMATE_MODE_FAN_ONLY});
+       ClimateMode::CLIMATE_MODE_DRY/*, ClimateMode::CLIMATE_MODE_FAN_ONLY*/});
 
   traits.set_supported_fan_modes(
       {ClimateFanMode::CLIMATE_FAN_AUTO, ClimateFanMode::CLIMATE_FAN_LOW,

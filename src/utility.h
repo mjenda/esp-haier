@@ -38,9 +38,12 @@ template <typename Message> String getHex(const Message &message) {
 
 // For some reason in captured data when crc16 is computed to FF 29 there is
 // a 55 in the middle -> FF 55 29. As a "temporary" workaround just
-// hardcore this case. This is ugly hack, but I don't have any idea what is this number.
-template <typename Message> bool hackCrc16(Message &message, byte crc16Offset) {
-  if (message[crc16Offset + 1] == 0xff && message[crc16Offset + 2] == 0x29) {
+// hardcore this case. This is ugly hack, but I don't have any idea what is this
+// number.
+template <typename Message>
+bool hackCrc16(Message& message, byte crc16Offset) {
+  if (message[crc16Offset + 1] == 0xff &&
+      (message[crc16Offset + 2] == 0x29 || message[crc16Offset + 2] == 0x7c)) {
     message[crc16Offset + 3] = message[crc16Offset + 2];
     message[crc16Offset + 2] = 0x55;
     return true;
